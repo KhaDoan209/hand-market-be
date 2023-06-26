@@ -4,9 +4,10 @@ import { AppModule } from './app.module';
 import { Reflector } from '@nestjs/core';
 import * as express from 'express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-
+import * as cookieParser from 'cookie-parser';
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule);
+  app.enableCors({ origin: true, credentials: true })
   const config = new DocumentBuilder()
     .setTitle('Fiverr Final')
     .setDescription('The final project for Node 30 class')
@@ -17,6 +18,7 @@ async function bootstrap(): Promise<void> {
   app.use(express.static('.'))
   // const document = SwaggerModule.createDocument(app, config);
   // SwaggerModule.setup('', app, document);
+  app.use(cookieParser());
   await app.listen(8080);
 }
 bootstrap();
