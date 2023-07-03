@@ -1,6 +1,6 @@
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 
 @Injectable()
 export class AuthUtilService {
@@ -29,6 +29,17 @@ export class AuthUtilService {
       }
    }
 
+   public verifyToken(token: string, jwtSecret: string): any {
+      try {
+         if (token !== null) {
+            return jwt.verify(token, jwtSecret);
+         } else {
+            return null;
+         }
+      } catch (error) {
+         throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED)
+      }
+   }
    public getMethodFromRequest(req: Request): string {
       const method = req.method
       return method
@@ -37,4 +48,5 @@ export class AuthUtilService {
    public getBodyFromRequest(req: Request): any {
       return req.body
    }
+
 }

@@ -1,4 +1,4 @@
-import { IsBoolean, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AuthLoginDTO {
@@ -18,7 +18,7 @@ export class AuthRegisterDTO {
    @IsString()
    @ApiProperty()
    readonly first_name: string;
-   
+
    @IsNotEmpty()
    @IsString()
    @ApiProperty()
@@ -31,6 +31,7 @@ export class AuthRegisterDTO {
 
    @IsNotEmpty()
    @IsString()
+   @MinLength(1)
    @ApiProperty()
    readonly password: string
 }

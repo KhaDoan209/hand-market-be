@@ -2,7 +2,7 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
-import { AuthRegisterDTO } from 'src/application/dto/auth-dto/auth.dto';
+import { AuthRegisterDTO } from 'src/application/dto/auth.dto';
 import { PrismaClient } from '@prisma/client';
 import { AuthUtilService } from 'src/shared/utils/auth-util/auth-utils.service';
 @Injectable()
@@ -27,7 +27,7 @@ export class RegisterMiddleware implements NestMiddleware {
             return response.status(409).json({ message: "Email is existed", status: 409, error: "Conflict" })
          } else {
             next()
-         }
+         }  
       }
    }
 }

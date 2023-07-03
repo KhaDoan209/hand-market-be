@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { AuthLoginDTO, AuthRegisterDTO } from 'src/application/dto/auth-dto/auth.dto';
+import { Injectable, Inject } from '@nestjs/common';
+import { AuthLoginDTO, AuthRegisterDTO } from 'src/application/dto/auth.dto';
 import { AuthRepository } from 'src/application/repositories/business/auth.repository';
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/domain/enums/roles.enum';
@@ -7,11 +7,14 @@ import { PrismaService } from 'src/infrastructure/config/prisma/prisma/prisma.se
 import { EnvironmentConfigService } from 'src/infrastructure/config/environment/environment/environment.service';
 import { JwtService } from '@nestjs/jwt';
 import { generateAccessToken, generateRefreshToken, revertToken } from 'src/shared/utils/custom-functions/custom-token';
+import { CACHE_MANAGER } from '@nestjs/cache-manager/dist';
+import { Cache } from 'cache-manager'
 @Injectable()
 export class AuthService implements AuthRepository {
   constructor(private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly configService: EnvironmentConfigService) {
+    private readonly configService: EnvironmentConfigService,
+    @Inject(CACHE_MANAGER) private cache: Cache = null) {
   }
 
   async login(userLogin: AuthLoginDTO): Promise<any> {
@@ -60,11 +63,18 @@ export class AuthService implements AuthRepository {
       password: hashPassword,
       role: Role.User
     }
-    return await this.prisma.create('User', newAccount)
+    await this.prisma.create('User', newAccount)
+    const listUser = await this.prisma.usePrisma().user.findMany({
+      where: {
+        id: {
+          gt: 0
+        }
+      },
+    })
+    await this.cache.set("list_user", listUser)
   }
 
   async refresh(refresh_token: string): Promise<any> {
-
     const tokenDecoded = await this.jwtService.verify(refresh_token, {
       secret: this.configService.getRefreshSecret()
     })

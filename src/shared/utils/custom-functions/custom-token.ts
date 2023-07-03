@@ -3,7 +3,8 @@ import { EnvironmentConfigService } from "src/infrastructure/config/environment/
 export const generateAccessToken = async (jwtService: any, configService: EnvironmentConfigService, object: any) => {
    let data = {
       email: object.email,
-      password: object.password
+      password: object.password,
+      role: object.role
    }
    return await jwtService.signAsync({ data: data }, { expiresIn: configService.getJwtExpired(), secret: configService.getJwtSecret() })
 }
@@ -22,8 +23,13 @@ export const revertToken = (token: string) => {
 
 export const calculateRemainingTime = (token: any) => {
    const currentTimestamp = new Date().getTime();
-   const tokenExpirationTimestamp = token.exp * 1000;
-   const timeRemaining = tokenExpirationTimestamp - currentTimestamp;
-   const minutesRemaining = Math.floor(timeRemaining / (1000 * 60));
-   return minutesRemaining
+   if (token) {
+      const tokenExpirationTimestamp = token.exp * 1000;
+      const timeRemaining = tokenExpirationTimestamp - currentTimestamp;
+      const minutesRemaining = Math.floor(timeRemaining / (1000 * 60));
+      return minutesRemaining
+   } else {
+      return null
+   }
+
 }

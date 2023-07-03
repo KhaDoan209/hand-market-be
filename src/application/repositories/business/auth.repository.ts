@@ -1,4 +1,4 @@
-import { AuthLoginDTO, AuthRegisterDTO } from "src/application/dto/auth-dto/auth.dto";
+import { AuthLoginDTO, AuthRegisterDTO } from "src/application/dto/auth.dto";
 
 export interface AuthRepository {
    login(userLogin: AuthLoginDTO): Promise<any>;
