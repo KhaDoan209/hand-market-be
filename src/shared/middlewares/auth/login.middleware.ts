@@ -2,7 +2,7 @@ import { Injectable, NestMiddleware, HttpException, HttpStatus } from '@nestjs/c
 import { Request, Response, NextFunction } from 'express';
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
-import { AuthLoginDTO } from 'src/application/dto/auth-dto/auth.dto';
+import { AuthLoginDTO } from 'src/application/dto/auth.dto';
 import { PrismaClient } from '@prisma/client';
 import { AuthUtilService } from 'src/shared/utils/auth-util/auth-utils.service';
 
@@ -28,7 +28,11 @@ export class LoginMiddlweare implements NestMiddleware {
          if (findUserByEmail) {
             const isMatched = await bcrypt.compare(password, findUserByEmail.password)
             if (isMatched) {
-               next()
+               if (findUserByEmail.is_banned == true) {
+                  throw new HttpException('Your account is banned, please contact admin', HttpStatus.FORBIDDEN);
+               } else {
+                  next()
+               }
             } else {
                throw new HttpException('Password is wrong', HttpStatus.FORBIDDEN);
             }

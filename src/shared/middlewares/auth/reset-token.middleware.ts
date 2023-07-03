@@ -19,8 +19,9 @@ export class ResetTokenMiddleware implements NestMiddleware {
       const { access_token, refresh_token } = request.cookies
       const decodedToken = this.authUtil.getDecodedToken(access_token, this.configService.getJwtSecret())
       const decodedRefreshToken = this.authUtil.getDecodedToken(refresh_token, this.configService.getRefreshSecret())
+
       if (decodedRefreshToken !== null) {
-         if (calculateRemainingTime(decodedToken) <= 1 || decodedToken === null) {
+         if (calculateRemainingTime(decodedToken) <= 1 || decodedToken == null) {
             const authService = new AuthService(this.prismaService, this.jwtService, this.configService)
             let data = await authService.refresh(refresh_token)
             response.cookie('access_token', data.access_token, { httpOnly: true, expires: new Date(Date.now() + 30 * 60 * 1000), });

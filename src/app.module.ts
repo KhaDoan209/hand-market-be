@@ -7,8 +7,18 @@ import { AuthUtilsModule } from './shared/utils/auth-util/auth-utils.module';
 import { HttpModule } from '@nestjs/axios'
 import { PrismaModule } from './infrastructure/config/prisma/prisma/prisma.module';
 import { LoginMiddlweare } from './shared/middlewares/auth/login.middleware';
+import * as redisStore from 'cache-manager-redis-store'
+import { CacheModule } from '@nestjs/cache-manager';
+import { EventGateway } from './event.gateway';
+
+
 @Module({
-  imports: [PersistenceModule, EnvironmentConfigModule.register(), AuthUtilsModule, HttpModule, PrismaModule],
+  imports: [PersistenceModule, EnvironmentConfigModule.register(), CacheModule.register({
+    store: redisStore,
+    ttl: 300,
+    isGlobal: true,
+  }), AuthUtilsModule, HttpModule, PrismaModule],
+  providers: [EventGateway]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

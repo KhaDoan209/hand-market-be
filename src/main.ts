@@ -1,10 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-// import { RoleGuard } from 'src/shared/middlewares/guards/role.guard';
+import { RoleGuard } from 'src/shared/middlewares/guards/role.guard';
 import { Reflector } from '@nestjs/core';
 import * as express from 'express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
+
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   app.enableCors({ origin: true, credentials: true })
@@ -14,7 +15,7 @@ async function bootstrap(): Promise<void> {
     .addBearerAuth()
     .build()
   app.setGlobalPrefix('hand-market-api')
-  // app.useGlobalGuards(new RoleGuard(app.get(Reflector)));
+  app.useGlobalGuards(new RoleGuard(app.get(Reflector)));
   app.use(express.static('.'))
   // const document = SwaggerModule.createDocument(app, config);
   // SwaggerModule.setup('', app, document);

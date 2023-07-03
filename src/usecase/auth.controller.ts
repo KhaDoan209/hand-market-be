@@ -1,6 +1,6 @@
 import { Controller, Get, Res, Req, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { AuthService } from '../persistence/auth/auth.service';
-import { AuthLoginDTO, AuthRegisterDTO } from 'src/application/dto/auth-dto/auth.dto';
+import { AuthLoginDTO, AuthRegisterDTO } from 'src/application/dto/auth.dto';
 import { ValidationPipe } from '@nestjs/common/pipes';
 import { customResponse } from 'src/shared/utils/custom-functions/custom-response';
 import { HttpStatus } from '@nestjs/common/enums';
