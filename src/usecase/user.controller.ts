@@ -6,12 +6,13 @@ import { customResponse } from 'src/shared/utils/custom-functions/custom-respons
 import { UpdateUserAddressDTO, UpdateUserDTO } from 'src/application/dto/user.dto';
 import { Role } from 'src/domain/enums/roles.enum';
 import { Roles } from 'src/shared/decorators/role.decorator';
-import { UseInterceptors } from '@nestjs/common/decorators';
+
 @UseGuards(AuthGuard('Jwt'))
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
+  @Roles(Role.Admin)
   @Get('/get-list-user')
   async getListUser(@Query() query: any) {
     const { pageNumber, pageSize } = query
@@ -19,6 +20,7 @@ export class UserController {
     return customResponse(data, HttpStatus.OK, "Get list user succesfully")
   }
 
+  @Roles(Role.Admin)
   @Get('/get-list-deleted-user')
   async getListDeletedUser(@Query() query: any) {
     const { pageNumber, pageSize } = query
@@ -32,8 +34,6 @@ export class UserController {
     return customResponse(data, HttpStatus.OK, "Get user detail successfully")
   }
 
-
-
   @Get('/search-user-by-email')
   async searchUserByEmail(@Query() query: any) {
     const { email } = query
@@ -43,7 +43,6 @@ export class UserController {
 
   @Post('/update-user-address/:id')
   async updateUserAddress(@Param('id') userId: number, @Body() body: UpdateUserAddressDTO) {
-    console.log(userId)
     await this.userService.updateUserAddress(body, +userId)
     return customResponse(null, HttpStatus.CREATED, "Update user's address successfully")
   }
@@ -53,12 +52,14 @@ export class UserController {
     return await this.userService.updateUserInformation(body, +userId)
   }
 
+  @Roles(Role.Admin)
   @Patch('/block-user/:id')
   async blockUser(@Param('id') userId: number) {
     await this.userService.blockUser(+userId)
     return customResponse(null, HttpStatus.OK, "Block user successfully")
   }
 
+  @Roles(Role.Admin)
   @Patch('/change-user-role/:id')
   async updateUserRole(@Param('id') userId: number, @Query() query: any) {
     const { role } = query
@@ -71,13 +72,15 @@ export class UserController {
     await this.userService.changePassword(+userId, body)
     return customResponse(null, HttpStatus.OK, "Password changed successfully")
   }
-
+  
+  @Roles(Role.Admin)
   @Patch('/restore-user-account/:id')
   async restoreUserAccount(@Param('id') userId: number) {
     await this.userService.restoreUserAccount(+userId);
     return customResponse(null, HttpStatus.OK, "User restored successfully")
   }
 
+  @Roles(Role.Admin)
   @Delete('/delete-user/:id')
   async tempDeleteUser(@Param('id') userId: number, @Query() query: any) {
     const { action } = query

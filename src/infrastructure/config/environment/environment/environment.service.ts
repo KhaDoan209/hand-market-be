@@ -18,4 +18,16 @@ export class EnvironmentConfigService {
    getRefreshExpired(): any {
       return this.config.get<string>('REFRESH_EXPIRED_IN')
    }
+   getMailHost(): any {
+      return this.config.get<string>('MAIL_HOST')
+   }
+   getMailUser(): any {
+      return this.config.get<string>('MAIL_USER')
+   }
+   getMailPassword(): any {
+      return this.config.get<string>('MAIL_PASSWORD')
+   }
+   getMailFrom(): any {
+      return this.config.get<string>('MAIL_FROM')
+   }
 }

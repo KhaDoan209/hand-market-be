@@ -7,9 +7,14 @@ import { AuthUtilsModule } from './shared/utils/auth-util/auth-utils.module';
 import { HttpModule } from '@nestjs/axios'
 import { PrismaModule } from './infrastructure/config/prisma/prisma/prisma.module';
 import { LoginMiddlweare } from './shared/middlewares/auth/login.middleware';
+import { UserMiddleware } from './shared/middlewares/auth/user.middleware';
 import * as redisStore from 'cache-manager-redis-store'
 import { CacheModule } from '@nestjs/cache-manager';
+import { MailerModule } from '@nestjs-modules/mailer';
 import { EventGateway } from './event.gateway';
+import { EnvironmentConfigService } from './infrastructure/config/environment/environment/environment.service';
+import { join } from 'path';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 
 
 @Module({
@@ -17,7 +22,32 @@ import { EventGateway } from './event.gateway';
     store: redisStore,
     ttl: 300,
     isGlobal: true,
-  }), AuthUtilsModule, HttpModule, PrismaModule],
+  }), AuthUtilsModule, HttpModule, PrismaModule, MailerModule.forRootAsync({
+    imports: [EnvironmentConfigModule],
+    useFactory: async (config: EnvironmentConfigService) => ({
+      transport: {
+        host: config.getMailHost(),
+        port: 587,
+        secure: false,
+        ignoreTLS: false,
+        auth: {
+          user: config.getMailUser(),
+          pass: config.getMailPassword()
+        }
+      },
+      defaults: {
+        from: `"No Reply" <${config.getMailFrom()}>`
+      },
+      template: {
+        dir: join(__dirname, 'src/templates/email'),
+        adapter: new HandlebarsAdapter(),
+        options: {
+          strict: true
+        }
+      }
+    }),
+    inject: [EnvironmentConfigService]
+  })],
   providers: [EventGateway]
 })
 export class AppModule implements NestModule {
@@ -30,5 +60,10 @@ export class AppModule implements NestModule {
     ).forRoutes('*')
     consumer.apply(LoginMiddlweare).forRoutes('auth/login')
     consumer.apply(RegisterMiddleware).forRoutes('auth/register')
+    consumer.apply(UserMiddleware).forRoutes(
+      { path: 'user/update-user-infor/:id', method: RequestMethod.POST },
+      { path: 'user/update-user-address/:id', method: RequestMethod.POST },
+      { path: 'user/get-user-detail/:id', method: RequestMethod.GET },
+      { path: 'user/change-password/:id', method: RequestMethod.PATCH },)
   }
 }
