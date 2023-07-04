@@ -8,6 +8,8 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager/dist';
 import { Cache } from 'cache-manager'
 import { User } from '@prisma/client';
 import { Role } from 'src/domain/enums/roles.enum';
+import { MailerService } from '@nestjs-modules/mailer';
+
 @Injectable()
 export class UserService implements UserRepository {
   constructor(private readonly prisma: PrismaService,

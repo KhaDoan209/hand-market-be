@@ -9,11 +9,13 @@ import { JwtService } from '@nestjs/jwt';
 import { generateAccessToken, generateRefreshToken, revertToken } from 'src/shared/utils/custom-functions/custom-token';
 import { CACHE_MANAGER } from '@nestjs/cache-manager/dist';
 import { Cache } from 'cache-manager'
+import { MailerService } from '@nestjs-modules/mailer';
 @Injectable()
 export class AuthService implements AuthRepository {
   constructor(private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: EnvironmentConfigService,
+    private readonly mailService: MailerService = null,
     @Inject(CACHE_MANAGER) private cache: Cache = null) {
   }
 
@@ -37,6 +39,7 @@ export class AuthService implements AuthRepository {
         last_name: user.last_name,
         role: user.role
       }
+
       await this.prisma.usePrisma().user.update({
         where: {
           email,
@@ -64,6 +67,14 @@ export class AuthService implements AuthRepository {
       role: Role.User
     }
     await this.prisma.create('User', newAccount)
+    await this.mailService.sendMail({
+      to: newAccount.email,
+      subject: "Welcome to the Hand Market, enjoy your shopping !",
+      template: './welcome',
+      context: {
+        name: `${newAccount.first_name} ${newAccount.last_name}`
+      }
+    })
     const listUser = await this.prisma.usePrisma().user.findMany({
       where: {
         id: {
