@@ -32,8 +32,10 @@ export class AuthController {
   }
 
   @Post('/logout/:id')
-  async logout(@Param('id') id: number) {
-    await this.authService.logout(+id)
+  async logout(@Param('id') id: number, @Res({ passthrough: true }) res: Response) {
+    await this.authService.logout(+id);
+    res.cookie('access_token', null, { httpOnly: false, expires: new Date(Date.now() + 1000) });
+    res.cookie('refresh_token', null, { httpOnly: false, expires: new Date(Date.now() + 1000) });
     return customResponse
       (null, HttpStatus.OK, "Logout successfully")
   }

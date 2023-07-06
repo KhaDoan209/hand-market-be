@@ -1,4 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Query, HttpStatus } from '@nestjs/common';
+import {
+  Controller, Get, Post, Body, Patch, Param, Delete, Res, Query, HttpStatus, UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import { UserService } from '../persistence/user/user.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -6,11 +9,12 @@ import { customResponse } from 'src/shared/utils/custom-functions/custom-respons
 import { UpdateUserAddressDTO, UpdateUserDTO } from 'src/application/dto/user.dto';
 import { Role } from 'src/domain/enums/roles.enum';
 import { Roles } from 'src/shared/decorators/role.decorator';
-
+import { FileInterceptor } from '@nestjs/platform-express';
+import { CloudinaryService } from 'src/infrastructure/common/cloudinary/cloudinary.service';
 @UseGuards(AuthGuard('Jwt'))
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) { }
+  constructor(private readonly userService: UserService, private readonly cloudinary: CloudinaryService) { }
 
   @Roles(Role.Admin)
   @Get('/get-list-user')
@@ -49,7 +53,16 @@ export class UserController {
 
   @Post('/update-user-infor/:id')
   async updateUserInfor(@Param('id') userId: number, @Body() body: UpdateUserDTO) {
-    return await this.userService.updateUserInformation(body, +userId)
+    await this.userService.updateUserInformation(body, +userId)
+    return customResponse(null, HttpStatus.CREATED, "User information has been updated")
+  }
+
+  @Post('/upload-user-avatar/:id')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAvatar(@UploadedFile() file: Express.Multer.File, @Param('id') userId: number) {
+    const data = await this.cloudinary.uploadFile(file)
+    await this.userService.uploadAvatar(data, +userId)
+    return customResponse(null, HttpStatus.CREATED, "Avatar has been uploaded")
   }
 
   @Roles(Role.Admin)
@@ -72,7 +85,7 @@ export class UserController {
     await this.userService.changePassword(+userId, body)
     return customResponse(null, HttpStatus.OK, "Password changed successfully")
   }
-  
+
   @Roles(Role.Admin)
   @Patch('/restore-user-account/:id')
   async restoreUserAccount(@Param('id') userId: number) {

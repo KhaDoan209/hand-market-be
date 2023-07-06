@@ -27,3 +27,10 @@ export const getDataByPage = (pageNumber: number, pageSize: number, totalRecords
    return response
 }
 
+export const getImagePublicId = (userAvatar: string) => {
+   const url = new URL(userAvatar);
+   const pathParts = url.pathname.split('/');
+   const fileName = pathParts.pop();
+   const publicId = 'hand-market/' + fileName.split('.')[0];
+   return publicId
+}

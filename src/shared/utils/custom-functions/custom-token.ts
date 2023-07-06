@@ -2,6 +2,7 @@ import { EnvironmentConfigService } from "src/infrastructure/config/environment/
 
 export const generateAccessToken = async (jwtService: any, configService: EnvironmentConfigService, object: any) => {
    let data = {
+      id: object.id,
       email: object.email,
       password: object.password,
       role: object.role

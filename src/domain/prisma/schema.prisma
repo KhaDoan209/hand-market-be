@@ -193,6 +193,7 @@ model User {
   refresh_token String?        @db.Text
   avatar        String?        @db.Text
   is_deleted    Boolean?       @default(false)
+  phone         String?        @db.VarChar(20)
   Address       Address?
   Blog          Blog[]
   Cart          Cart[]
