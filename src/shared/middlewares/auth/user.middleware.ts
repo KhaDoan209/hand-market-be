@@ -1,7 +1,5 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { HttpException, HttpStatus } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
 import { EnvironmentConfigService } from 'src/infrastructure/config/environment/environment/environment.service';
 import { Role } from 'src/domain/enums/roles.enum';
 import { AuthUtilService } from 'src/shared/utils/auth-util/auth-utils.service';
@@ -21,7 +19,7 @@ export class UserMiddleware implements NestMiddleware {
             if (role === Role.Admin) {
                next();
             } else {
-               if (role === Role.User && id === userIdToOperate) {
+               if (role === Role.User && id == userIdToOperate) {
                   next();
                }
                else {

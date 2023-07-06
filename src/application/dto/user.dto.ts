@@ -1,4 +1,4 @@
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateUserDTO {
    @IsString()
@@ -9,10 +9,12 @@ export class UpdateUserDTO {
    @IsString()
    readonly last_name: string;
 
+   @IsBoolean()
+   readonly is_locked: boolean;
 
    @IsString()
-   readonly email: string;
-
+   @MaxLength(15)
+   readonly phone: string;
 }
 
 export class ChangeUserPasswordDTO {

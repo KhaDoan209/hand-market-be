@@ -39,7 +39,6 @@ export class AuthService implements AuthRepository {
         last_name: user.last_name,
         role: user.role
       }
-
       await this.prisma.usePrisma().user.update({
         where: {
           email,
@@ -86,6 +85,7 @@ export class AuthService implements AuthRepository {
   }
 
   async refresh(refresh_token: string): Promise<any> {
+
     const tokenDecoded = await this.jwtService.verify(refresh_token, {
       secret: this.configService.getRefreshSecret()
     })

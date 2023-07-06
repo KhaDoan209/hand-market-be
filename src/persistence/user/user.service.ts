@@ -3,16 +3,17 @@ import { UserRepository } from 'src/application/repositories/business/user.repos
 import { UpdateUserAddressDTO, UpdateUserDTO } from 'src/application/dto/user.dto';
 import { PrismaService } from 'src/infrastructure/config/prisma/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { getDataByPage } from 'src/shared/utils/custom-functions/custom-response';
+import { getDataByPage, getImagePublicId } from 'src/shared/utils/custom-functions/custom-response';
 import { CACHE_MANAGER } from '@nestjs/cache-manager/dist';
 import { Cache } from 'cache-manager'
 import { User } from '@prisma/client';
-import { Role } from 'src/domain/enums/roles.enum';
 import { MailerService } from '@nestjs-modules/mailer';
-
+import { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
+import { CloudinaryService } from 'src/infrastructure/common/cloudinary/cloudinary.service';
 @Injectable()
 export class UserService implements UserRepository {
   constructor(private readonly prisma: PrismaService,
+    private readonly cloudinary: CloudinaryService,
     @Inject(CACHE_MANAGER) private cache: Cache) {
   }
 
@@ -100,15 +101,65 @@ export class UserService implements UserRepository {
   }
 
   async updateUserInformation(body: UpdateUserDTO, userIdToUpdate: number): Promise<any> {
-    // await this.prisma.usePrisma().user.update({
-    //   where: {
-    //     id: userIdToUpdate,
-    //   },
-    //   data: body
-    // })
-    await this.getListUser()
-    return "asdasdasd"
+    await this.prisma.usePrisma().user.update({
+      where: {
+        id: userIdToUpdate,
+      },
+      data: body
+    })
+    const data = await this.prisma.usePrisma().user.findFirst({
+      where: {
+        id: userIdToUpdate,
+      },
+      include: {
+        Address: true,
+      },
+    })
+    const listUser = await this.prisma.usePrisma().user.findMany({
+      where: {
+        id: {
+          gt: 0
+        },
+        is_deleted: false
+      },
+    })
+    await this.cache.set("list_user", listUser)
+    return await this.cache.set(`/user/get-user-detail/${userIdToUpdate}`, data, { ttl: 30 } as any)
   }
+
+  async uploadAvatar(data: UploadApiResponse | UploadApiErrorResponse, id: number): Promise<any> {
+    const { url } = data
+    const user: User = await this.prisma.findOne('user', id)
+    if (user.avatar !== null) {
+      const publicId = getImagePublicId(user.avatar)
+      await this.cloudinary.deleteFile(publicId)
+      await this.prisma.usePrisma().user.update({
+        where: {
+          id,
+        }, data: {
+          avatar: url
+        }
+      })
+    } else {
+      await this.prisma.usePrisma().user.update({
+        where: {
+          id,
+        }, data: {
+          avatar: url
+        }
+      })
+    }
+    const userDetailCache = await this.prisma.usePrisma().user.findFirst({
+      where: {
+        id,
+      },
+      include: {
+        Address: true,
+      },
+    })
+    return await this.cache.set(`/user/get-user-detail/${id}`, userDetailCache, { ttl: 30 } as any)
+  }
+
 
   async updateUserAddress(body: UpdateUserAddressDTO, userIdToUpdate: number): Promise<any> {
     await this.prisma.usePrisma().address.update({
