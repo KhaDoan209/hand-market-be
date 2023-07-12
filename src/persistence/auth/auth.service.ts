@@ -10,6 +10,8 @@ import { generateAccessToken, generateRefreshToken, revertToken } from 'src/shar
 import { CACHE_MANAGER } from '@nestjs/cache-manager/dist';
 import { Cache } from 'cache-manager'
 import { MailerService } from '@nestjs-modules/mailer';
+import * as jwt from 'jsonwebtoken';
+
 @Injectable()
 export class AuthService implements AuthRepository {
   constructor(private readonly prisma: PrismaService,
@@ -24,33 +26,27 @@ export class AuthService implements AuthRepository {
     const user = await this.prisma.usePrisma().user.findFirst({
       where: {
         email,
+      },
+      include: {
+        Address: true
       }
     })
     const isMatched = await bcrypt.compare(password, user.password)
     if (isMatched) {
       const access_token = await generateAccessToken(this.jwtService, this.configService, user);
       const refresh_token = await generateRefreshToken(this.jwtService, this.configService, user);
-      const hashedRefreshToken = await bcrypt.hash(revertToken(refresh_token), 10)
-      const userToResponse = {
-        id: user.id,
-        email: user.email,
-        avatar: user.avatar,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        role: user.role
-      }
       await this.prisma.usePrisma().user.update({
         where: {
           email,
         },
         data: {
-          refresh_token: hashedRefreshToken
+          refresh_token: refresh_token
         }
       })
       return {
         access_token,
         refresh_token,
-        userToResponse
+        userToResponse: user
       }
     }
   }
@@ -85,7 +81,6 @@ export class AuthService implements AuthRepository {
   }
 
   async refresh(refresh_token: string): Promise<any> {
-
     const tokenDecoded = await this.jwtService.verify(refresh_token, {
       secret: this.configService.getRefreshSecret()
     })
@@ -96,8 +91,8 @@ export class AuthService implements AuthRepository {
     })
     if (user) {
       if (user.refresh_token !== null) {
-        const compareRefresh = await bcrypt.compare(revertToken(refresh_token), user.refresh_token)
-        if (compareRefresh) {
+
+        if (refresh_token === user.refresh_token) {
           const access_token = await generateAccessToken(this.jwtService, this.configService, user);
           return {
             access_token,

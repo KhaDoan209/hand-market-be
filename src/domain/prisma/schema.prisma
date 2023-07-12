@@ -52,6 +52,7 @@ model Cart {
 model Category {
   id         Int       @id @unique(map: "id_UNIQUE") @default(autoincrement())
   name       String?   @db.VarChar(45)
+  image      String?   @db.Text
   created_at DateTime? @db.DateTime(0)
   created_by String?   @db.VarChar(100)
   Product    Product[]
@@ -143,27 +144,27 @@ model OrderDetail {
 }
 
 model Product {
-  id            Int           @id @unique(map: "id_UNIQUE") @default(autoincrement())
-  name          String?       @db.VarChar(200)
-  image         String?       @db.Text
-  price         Decimal?      @default(0.00) @db.Decimal(10, 2)
-  description   String?       @db.Text
-  in_stock      Boolean?      @default(true)
-  imported_date DateTime?     @db.DateTime(0)
-  type          String?       @db.VarChar(45)
-  created_by    String?       @db.VarChar(100)
-  stars         Int?          @default(0)
-  purchase      Float?        @default(0)
-  views         Float?        @default(0)
-  created_at    DateTime?     @db.DateTime(0)
-  is_deleted    Boolean?      @default(false)
-  category_id   Int?
-  discount_id   Int?
-  Cart          Cart[]
-  Feedback      Feedback[]
-  OrderDetail   OrderDetail[]
-  Category      Category?     @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "product_ibfk_1")
-  Discount      Discount?     @relation(fields: [discount_id], references: [id], onDelete: Cascade, map: "product_ibfk_2")
+  id          Int           @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  name        String?       @db.VarChar(200)
+  image       String?       @db.Text
+  price       Decimal?      @default(0.00) @db.Decimal(10, 2)
+  description String?       @db.Text
+  in_stock    Boolean?      @default(true)
+  type        String?       @db.VarChar(45)
+  stars       Int?          @default(0)
+  brand       String?       @db.VarChar(100)
+  purchase    Float?        @default(0)
+  views       Float?        @default(0)
+  created_at  DateTime?     @db.DateTime(0)
+  is_deleted  Boolean?      @default(false)
+  quantity    Int?          @default(0)
+  category_id Int
+  discount_id Int?
+  Cart        Cart[]
+  Feedback    Feedback[]
+  OrderDetail OrderDetail[]
+  Category    Category      @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "product_ibfk_1")
+  Discount    Discount?     @relation(fields: [discount_id], references: [id], onDelete: Cascade, map: "product_ibfk_2")
 
   @@index([category_id], map: "category_id_idx")
   @@index([discount_id], map: "discount_id_idx")

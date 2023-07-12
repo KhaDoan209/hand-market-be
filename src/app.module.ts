@@ -64,6 +64,7 @@ export class AppModule implements NestModule {
       { path: 'user/update-user-infor/:id', method: RequestMethod.POST },
       { path: 'user/update-user-address/:id', method: RequestMethod.POST },
       { path: 'user/get-user-detail/:id', method: RequestMethod.GET },
-      { path: 'user/change-password/:id', method: RequestMethod.PATCH },)
+      { path: 'user/change-password/:id', method: RequestMethod.PATCH },
+      { path: 'user/upload-user-avatar/:id', method: RequestMethod.POST })
   }
 }

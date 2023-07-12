@@ -16,7 +16,6 @@ import { CloudinaryService } from 'src/infrastructure/common/cloudinary/cloudina
 export class UserController {
   constructor(private readonly userService: UserService, private readonly cloudinary: CloudinaryService) { }
 
-  @Roles(Role.Admin)
   @Get('/get-list-user')
   async getListUser(@Query() query: any) {
     const { pageNumber, pageSize } = query

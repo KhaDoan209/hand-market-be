@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
 import { Role } from 'src/domain/enums/roles.enum';
 import { Reflector } from '@nestjs/core';
 import { AuthUtilService } from 'src/shared/utils/auth-util/auth-utils.service';
@@ -15,10 +15,12 @@ export class RoleGuard implements CanActivate {
          return true;
       }
       const request = context.switchToHttp().getRequest();
-      if (request.cookies.access_token !== undefined) {
+      if (request.cookies.access_token !== "undefined" && request.cookies.access_token !== null) {
          const decodedToken = authUtil.getDecodedToken(request.cookies.access_token, config.get('SECRET_KEY'))
-         const hasRole = requiredRoles.some((role) => role == decodedToken.data.role);
+         const hasRole = requiredRoles.some((role) => role == decodedToken?.data.role);
          return hasRole;
+      } else {
+         throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
       }
    }
 }
