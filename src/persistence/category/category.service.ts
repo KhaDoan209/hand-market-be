@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from 'src/domain/enums/prisma.enum';
+import { PrismaEnum } from 'src/domain/enums/prisma.enum';
 import { PrismaService } from 'src/infrastructure/config/prisma/prisma/prisma.service';
 import { CategoryRepository } from 'src/application/repositories/business/category.repository';
 import { CreateCategoryDTO, UpdateCategoryDTO } from 'src/application/dto/category.dto';
@@ -11,7 +11,7 @@ export class CategoryService implements CategoryRepository {
   }
 
   async getListCategory() {
-    return await this.prisma.findAll(Prisma.Category)
+    return await this.prisma.findAll(PrismaEnum.Category)
   }
   async getProductTypes(id: number): Promise<any> {
     return ListProductTypes.find(item => {

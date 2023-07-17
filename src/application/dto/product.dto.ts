@@ -40,5 +40,26 @@ export class CreateProductDTO {
 }
 
 export class UpdateProductDTO {
+   @IsString()
+   @MaxLength(100)
+   name: string;
+
+   @Min(0)
+   @IsNotEmpty()
+   @IsNumber()
+   price: number
+
+   @IsString()
+   description: string;
+
+   @Min(0)
+   @IsNotEmpty()
+   @IsNumber()
+   discount_id: number;
+
+   @Min(0)
+   @IsNotEmpty()
+   @IsNumber()
+   quantity: number;
 
 }

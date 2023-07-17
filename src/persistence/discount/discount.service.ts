@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from 'src/domain/enums/prisma.enum';
+import { PrismaEnum } from 'src/domain/enums/prisma.enum';
 import { PrismaService } from 'src/infrastructure/config/prisma/prisma/prisma.service';
 import { DiscountRepository } from 'src/application/repositories/business/discount.repository';
 import { CreateDiscountDTO, UpdateDiscountDTO } from 'src/application/dto/discount.dto';
@@ -10,7 +10,7 @@ export class DiscountService implements DiscountRepository {
   }
 
   async getListDiscount(): Promise<any> {
-    return await this.prisma.findAll(Prisma.Discount)
+    return await this.prisma.findAll(PrismaEnum.Discount)
   }
   getDiscountDetail(id: number): Promise<any> {
     return

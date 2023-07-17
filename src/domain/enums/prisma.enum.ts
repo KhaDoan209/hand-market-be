@@ -1,6 +1,7 @@
-export enum Prisma {
+export enum PrismaEnum {
    User = 'user',
    Product = 'product',
    Category = 'category',
-   Discount = 'discount'
+   Discount = 'discount',
+   Address = 'address'
 }

@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { getDataByPage, getImagePublicId } from 'src/shared/utils/custom-functions/custom-response';
 import { CACHE_MANAGER } from '@nestjs/cache-manager/dist';
 import { Cache } from 'cache-manager'
-import { Prisma } from 'src/domain/enums/prisma.enum';
+import { PrismaEnum } from 'src/domain/enums/prisma.enum';
 import { MailerService } from '@nestjs-modules/mailer';
 import { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 import { CloudinaryService } from 'src/infrastructure/common/cloudinary/cloudinary.service';
@@ -77,7 +77,7 @@ export class UserService implements UserRepository {
     if (getCache) {
       return getCache
     } else {
-      const data = await this.prisma.usePrisma().user.findFirst({
+      const userDetail = await this.prisma.usePrisma().user.findFirst({
         where: {
           id,
         },
@@ -85,8 +85,8 @@ export class UserService implements UserRepository {
           Address: true,
         },
       })
-      await this.cache.set(UserCache.UserDetail + id, data, { ttl: 30 } as any)
-      return data
+      await this.cache.set(UserCache.UserDetail + id, userDetail, { ttl: 30 } as any)
+      return userDetail
     }
   }
 
@@ -131,7 +131,7 @@ export class UserService implements UserRepository {
 
   async uploadAvatar(data: UploadApiResponse | UploadApiErrorResponse, id: number): Promise<any> {
     const { url } = data
-    const user: User = await this.prisma.findOne(Prisma.User, id)
+    const user: User = await this.prisma.findOne(PrismaEnum.User, id)
     if (user.avatar !== null) {
       const publicId = getImagePublicId(user.avatar)
       await this.cloudinary.deleteFile(publicId)
@@ -164,12 +164,26 @@ export class UserService implements UserRepository {
 
 
   async updateUserAddress(body: UpdateUserAddressDTO, userIdToUpdate: number): Promise<any> {
-    await this.prisma.usePrisma().address.update({
+    const isAddressExisted = await this.prisma.usePrisma().address.findFirst({
       where: {
         user_id: userIdToUpdate
-      },
-      data: body
+      }
     })
+    if (isAddressExisted !== null) {
+      await this.prisma.usePrisma().address.update({
+        where: {
+          user_id: userIdToUpdate
+        },
+        data: body
+      })
+    } else {
+      await this.prisma.usePrisma().address.create({
+        data: {
+          ...body,
+          user_id: userIdToUpdate
+        }
+      })
+    }
     const userDetail = await this.prisma.usePrisma().user.findFirst({
       where: {
         id: userIdToUpdate,
@@ -187,11 +201,11 @@ export class UserService implements UserRepository {
       },
     })
     await this.cache.set(UserCache.ListUser, listUser)
-    await this.cache.set(UserCache.UserDetail + userIdToUpdate, userDetail, { ttl: 30 } as any)
+    return await this.cache.set(UserCache.UserDetail + userIdToUpdate, userDetail, { ttl: 30 } as any)
   }
 
   async blockUser(id: number): Promise<any> {
-    const user: User = await this.prisma.findOne(Prisma.User, id)
+    const user: User = await this.prisma.findOne(PrismaEnum.User, id)
     await this.prisma.usePrisma().user.update({
       where: {
         id,
@@ -225,8 +239,16 @@ export class UserService implements UserRepository {
         }, is_deleted: false
       },
     })
+    const userDetail = await this.prisma.usePrisma().user.findFirst({
+      where: {
+        id,
+      },
+      include: {
+        Address: true,
+      },
+    })
     await this.cache.set(UserCache.ListUser, listUser)
-    await this.cache.set(UserCache.UserDetail + id, id, { ttl: 30 } as any)
+    await this.cache.set(UserCache.UserDetail + id, userDetail, { ttl: 30 } as any)
   }
 
   async changePassword(userId: number, body: any): Promise<any> {
@@ -272,7 +294,7 @@ export class UserService implements UserRepository {
 
   async deleteUser(id: number, action: string = "temporary"): Promise<any> {
     if (action === "permanently") {
-      await this.prisma.delete(Prisma.User, id)
+      await this.prisma.delete(PrismaEnum.User, id)
     } else {
       await this.prisma.usePrisma().user.update({
         where: {
