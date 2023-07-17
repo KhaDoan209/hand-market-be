@@ -8,6 +8,7 @@ import { HttpModule } from '@nestjs/axios'
 import { PrismaModule } from './infrastructure/config/prisma/prisma/prisma.module';
 import { LoginMiddlweare } from './shared/middlewares/auth/login.middleware';
 import { UserMiddleware } from './shared/middlewares/auth/user.middleware';
+import { ProductMiddleware } from './shared/middlewares/auth/product-middelware';
 import * as redisStore from 'cache-manager-redis-store'
 import { CacheModule } from '@nestjs/cache-manager';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -64,6 +65,11 @@ export class AppModule implements NestModule {
       { path: 'user/update-user-infor/:id', method: RequestMethod.POST },
       { path: 'user/update-user-address/:id', method: RequestMethod.POST },
       { path: 'user/get-user-detail/:id', method: RequestMethod.GET },
-      { path: 'user/change-password/:id', method: RequestMethod.PATCH },)
+      { path: 'user/change-password/:id', method: RequestMethod.PATCH },
+      { path: 'user/upload-user-avatar/:id', method: RequestMethod.POST })
+    consumer.apply(ProductMiddleware).forRoutes({
+      path: 'product/update-product-information/:id', method: RequestMethod.POST
+    })
   }
 }
+

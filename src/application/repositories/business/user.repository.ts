@@ -1,8 +1,7 @@
 import { UpdateUserDTO, UpdateUserAddressDTO } from "src/application/dto/user.dto";
-import { User } from "@prisma/client";
 import { UploadApiErrorResponse, UploadApiResponse } from "cloudinary";
 export interface UserRepository {
-   getListUser(pageNumber: number, pageSize: number): Promise<User[]>;
+   getListUser(pageNumber: number, pageSize: number): Promise<any>;
    getListDeletedUser(pageNumber: number, pageSize: number): Promise<any>;
    getUserDetail(id: number): Promise<any>;
    searchUserByEmail(email: string): Promise<any>;

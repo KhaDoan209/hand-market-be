@@ -16,7 +16,6 @@ import { CloudinaryService } from 'src/infrastructure/common/cloudinary/cloudina
 export class UserController {
   constructor(private readonly userService: UserService, private readonly cloudinary: CloudinaryService) { }
 
-  @Roles(Role.Admin)
   @Get('/get-list-user')
   async getListUser(@Query() query: any) {
     const { pageNumber, pageSize } = query
@@ -47,6 +46,7 @@ export class UserController {
 
   @Post('/update-user-address/:id')
   async updateUserAddress(@Param('id') userId: number, @Body() body: UpdateUserAddressDTO) {
+
     await this.userService.updateUserAddress(body, +userId)
     return customResponse(null, HttpStatus.CREATED, "Update user's address successfully")
   }
