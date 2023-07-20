@@ -3,5 +3,6 @@ export enum PrismaEnum {
    Product = 'product',
    Category = 'category',
    Discount = 'discount',
-   Address = 'address'
+   Address = 'address',
+   Cart = 'cart'
 }

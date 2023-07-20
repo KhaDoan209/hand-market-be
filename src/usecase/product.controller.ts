@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Body, Patch, Param, Delete, Res, Query, HttpStatus, UploadedFile,
+  Controller, Get, Post, Body, Param, Delete,  Query, HttpStatus, UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
@@ -11,6 +11,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from 'src/infrastructure/common/cloudinary/cloudinary.service';
 import { Role } from 'src/domain/enums/roles.enum';
 import { Roles } from 'src/shared/decorators/role.decorator';
+
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService,
@@ -36,6 +37,13 @@ export class ProductController {
     return customResponse(data, HttpStatus.OK, "Get list product by purchase successfully")
   }
 
+  @Get('/get-list-product-by-discount')
+  async getListProductByDiscount(@Query() query: any) {
+    const { pageNumber, pageSize } = query
+    const data = await this.productService.getListProductByDiscount(+pageNumber, +pageSize)
+    return customResponse(data, HttpStatus.OK, "Get list product by discount successfully")
+  }
+  
   @Post('/create-new-product')
   @UseGuards(AuthGuard('Jwt'))
   @Roles(Role.Admin)

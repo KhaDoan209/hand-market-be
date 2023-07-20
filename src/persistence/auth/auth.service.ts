@@ -4,13 +4,13 @@ import { AuthRepository } from 'src/application/repositories/business/auth.repos
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/domain/enums/roles.enum';
 import { PrismaService } from 'src/infrastructure/config/prisma/prisma/prisma.service';
+import { PrismaEnum } from 'src/domain/enums/prisma.enum';
 import { EnvironmentConfigService } from 'src/infrastructure/config/environment/environment/environment.service';
 import { JwtService } from '@nestjs/jwt';
 import { generateAccessToken, generateRefreshToken, revertToken } from 'src/shared/utils/custom-functions/custom-token';
 import { CACHE_MANAGER } from '@nestjs/cache-manager/dist';
 import { Cache } from 'cache-manager'
 import { MailerService } from '@nestjs-modules/mailer';
-import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService implements AuthRepository {
@@ -35,6 +35,7 @@ export class AuthService implements AuthRepository {
     if (isMatched) {
       const access_token = await generateAccessToken(this.jwtService, this.configService, user);
       const refresh_token = await generateRefreshToken(this.jwtService, this.configService, user);
+
       await this.prisma.usePrisma().user.update({
         where: {
           email,

@@ -4,6 +4,7 @@ export interface ProductRepository {
    getListProduct(pageNumber: number, pageSize: number): Promise<any>;
    getProductDetail(productId: number): Promise<any>;
    getListProductByPurchase(pageNumber: number, pageSize: number): Promise<any>
+   getListProductByDiscount(pageNumber: number, pageSize: number): Promise<any>
    createNewProduct(body: CreateProductDTO, imageLink: string): Promise<any>
    uploadProductImage(data: UploadApiResponse | UploadApiErrorResponse, id: number): Promise<any>
    searchProductByName(name: string): Promise<any>;
