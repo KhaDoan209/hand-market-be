@@ -37,16 +37,13 @@ model Blog {
 }
 
 model Cart {
-  product_id    Int
+  id            Int       @id(map: "cart_pkey") @default(autoincrement())
+  product_id    Int?
   user_id       Int
   item_quantity Int?
-  total         Decimal?  @db.Decimal(10, 2)
   created_at    DateTime? @db.Timestamp(0)
-  Product       Product   @relation(fields: [product_id], references: [id], onDelete: Cascade, map: "cart_ibfk_1")
-  User          User      @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "cart_ibfk_2")
-
-  @@id([product_id, user_id])
-  @@index([user_id], map: "user_id")
+  Product       Product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "cart_ibfk_1")
+  User          User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "cart_ibfk_2")
 }
 
 model Category {

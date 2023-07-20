@@ -14,7 +14,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { EventGateway } from './event.gateway';
 import { EnvironmentConfigService } from './infrastructure/config/environment/environment/environment.service';
-import { join } from 'path';
+import path, { join } from 'path';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 
 
@@ -57,7 +57,12 @@ export class AppModule implements NestModule {
       { path: 'auth/login', method: RequestMethod.POST },
       { path: 'auth/register', method: RequestMethod.POST },
       { path: 'auth/logout/:id', method: RequestMethod.POST },
-      { path: 'auth/check-existed-email', method: RequestMethod.GET }
+      { path: 'auth/check-existed-email', method: RequestMethod.GET },
+      { path: 'product/get-list-product', method: RequestMethod.GET },
+      { path: 'product/get-product-detail/:id', method: RequestMethod.GET },
+      { path: 'product/get-list-product-by-purchase', method: RequestMethod.GET },
+      { path: 'product/get-list-product-by-discount', method: RequestMethod.GET },
+      { path: 'category/get-list-category', method: RequestMethod.GET },
     ).forRoutes('*')
     consumer.apply(LoginMiddlweare).forRoutes('auth/login')
     consumer.apply(RegisterMiddleware).forRoutes('auth/register')
@@ -69,6 +74,10 @@ export class AppModule implements NestModule {
       { path: 'user/upload-user-avatar/:id', method: RequestMethod.POST })
     consumer.apply(ProductMiddleware).forRoutes({
       path: 'product/update-product-information/:id', method: RequestMethod.POST
+    }, {
+      path: 'product/upload-product-image/:id', method: RequestMethod.POST
+    }, {
+      path: 'product/delete-product/:id', method: RequestMethod.POST
     })
   }
 }

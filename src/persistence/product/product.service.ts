@@ -1,6 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { CreateProductDTO, UpdateProductDTO } from 'src/application/dto/product.dto';
-import { Prisma } from '@prisma/client';
 import { ProductCache } from 'src/domain/enums/cache.enum';
 import { PrismaService } from 'src/infrastructure/config/prisma/prisma/prisma.service';
 import { ProductRepository } from 'src/application/repositories/business/product.repository';
@@ -73,6 +72,29 @@ export class ProductService implements ProductRepository {
       }
     }))
     return getDataByPage(pageNumber, pageSize, totalRecord, listProductByPurchase)
+  }
+
+  async getListProductByDiscount(pageNumber: number, pageSize: number): Promise<any> {
+    const listProductByDiscount = await this.prisma.usePrisma().product.findMany({
+      include: {
+        Discount: true
+      },
+      orderBy: {
+        Discount: {
+          percentage: 'desc'
+        }
+      }
+    });
+    const totalRecord = Math.ceil(await this.prisma.usePrisma().product.count({
+      where: {
+        Discount: {
+          percentage: {
+            gt: 0
+          }
+        }
+      }
+    }))
+    return getDataByPage(pageNumber, pageSize, totalRecord, listProductByDiscount)
   }
 
   searchProductByName(name: string): Promise<any> {
