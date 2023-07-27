@@ -30,4 +30,10 @@ export class EnvironmentConfigService {
    getMailFrom(): any {
       return this.config.get<string>('MAIL_FROM')
    }
+   getStripeSecretKey(): any {
+      return this.config.get<string>('STRIPE_SECRET_KEY')
+   }
+   getFrontEndURL(): any {
+      return this.config.get<string>('FRONTEND_URL')
+   }
 }

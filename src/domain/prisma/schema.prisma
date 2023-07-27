@@ -57,14 +57,11 @@ model Category {
 }
 
 model CreditCard {
-  id               Int       @id @unique(map: "myCreditCardIdUniqueConstraint") @default(autoincrement())
-  card_holder_name String?   @db.VarChar(100)
-  card_number      String?   @db.VarChar(30)
-  expired_date     DateTime? @db.Date
-  cvc_cvv          String?   @db.VarChar(5)
-  user_id          Int?
-  User             User?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "credit_card_ibfk_1")
-  Order            Order[]
+  id                Int     @id @unique(map: "myCreditCardIdUniqueConstraint") @default(autoincrement())
+  user_id           Int?
+  payment_method_id String
+  User              User?   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "credit_card_ibfk_1")
+  Order             Order[]
 
   @@index([user_id], map: "credicard_ibfk_1_idx")
 }
@@ -117,6 +114,7 @@ model Order {
   address_id     Int?
   credit_id      Int?
   user_id        Int?
+  order_code     String?        @unique(map: "Order_unique_1")
   Notification   Notification[]
   Address        Address?       @relation(fields: [address_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_1")
   CreditCard     CreditCard?    @relation(fields: [credit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_2")
@@ -182,27 +180,28 @@ model Reaction {
 }
 
 model User {
-  id            Int            @id @unique(map: "id_UNIQUE") @default(autoincrement())
-  first_name    String?        @db.VarChar(50)
-  last_name     String?        @db.VarChar(50)
-  email         String?        @unique(map: "email_UNIQUE") @db.VarChar(100)
-  password      String?
-  role          String?        @db.VarChar(20)
-  is_locked     Boolean?       @default(false)
-  is_banned     Boolean?       @default(false)
-  refresh_token String?
-  avatar        String?
-  is_deleted    Boolean?       @default(false)
-  phone         String?        @db.VarChar(20)
-  Address       Address?
-  Blog          Blog[]
-  Cart          Cart[]
-  CreditCard    CreditCard[]
-  Feedback      Feedback[]
-  Notification  Notification[]
-  Order         Order[]
-  Rate          Rate[]
-  Reaction      Reaction[]
+  id                 Int            @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  first_name         String?        @db.VarChar(50)
+  last_name          String?        @db.VarChar(50)
+  email              String?        @unique(map: "email_UNIQUE") @db.VarChar(100)
+  password           String?
+  role               String?        @db.VarChar(20)
+  is_locked          Boolean?       @default(false)
+  is_banned          Boolean?       @default(false)
+  refresh_token      String?
+  avatar             String?
+  is_deleted         Boolean?       @default(false)
+  phone              String?        @db.VarChar(20)
+  stripe_customer_id String?        @unique(map: "strip_key")
+  Address            Address?
+  Blog               Blog[]
+  Cart               Cart[]
+  CreditCard         CreditCard[]
+  Feedback           Feedback[]
+  Notification       Notification[]
+  Order              Order[]
+  Rate               Rate[]
+  Reaction           Reaction[]
 }
 
 model Rate {

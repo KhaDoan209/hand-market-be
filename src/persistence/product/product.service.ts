@@ -149,7 +149,6 @@ export class ProductService implements ProductRepository {
     const product: Product = await this.prisma.findOne(PrismaEnum.Product, id)
     if (product.image !== '') {
       const publicId = getImagePublicId(product.image)
-      console.log(publicId);
       await this.cloudinary.deleteFile(publicId)
       await this.prisma.usePrisma().product.update({
         where: {

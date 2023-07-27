@@ -11,14 +11,18 @@ import { generateAccessToken, generateRefreshToken, revertToken } from 'src/shar
 import { CACHE_MANAGER } from '@nestjs/cache-manager/dist';
 import { Cache } from 'cache-manager'
 import { MailerService } from '@nestjs-modules/mailer';
+import { StripeService } from 'src/infrastructure/common/stripe/stripe.service';
 
 @Injectable()
 export class AuthService implements AuthRepository {
-  constructor(private readonly prisma: PrismaService,
+  constructor(
+    private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: EnvironmentConfigService,
     private readonly mailService: MailerService = null,
-    @Inject(CACHE_MANAGER) private cache: Cache = null) {
+    @Inject(CACHE_MANAGER) private cache: Cache = null,
+    private readonly stripe: StripeService = null
+  ) {
   }
 
   async login(userLogin: AuthLoginDTO): Promise<any> {
@@ -35,7 +39,17 @@ export class AuthService implements AuthRepository {
     if (isMatched) {
       const access_token = await generateAccessToken(this.jwtService, this.configService, user);
       const refresh_token = await generateRefreshToken(this.jwtService, this.configService, user);
-
+      if (user.stripe_customer_id === null) {
+        const { id } = await this.stripe.createStripeCustomer(user.first_name, user.last_name, user.email)
+        await this.prisma.usePrisma().user.update({
+          where: {
+            id: user.id
+          },
+          data: {
+            stripe_customer_id: id
+          }
+        })
+      }
       await this.prisma.usePrisma().user.update({
         where: {
           email,
