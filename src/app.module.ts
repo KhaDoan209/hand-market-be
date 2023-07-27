@@ -1,14 +1,14 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { EnvironmentConfigModule } from './infrastructure/config/environment/environment/environment.module';
 import { PersistenceModule } from './persistence/persistence.module';
-import { RegisterMiddleware } from './shared/middlewares/auth/register.middleware';
-import { ResetTokenMiddleware } from './shared/middlewares/auth/reset-token.middleware';
+import { RegisterMiddleware } from './shared/middlewares/business/register.middleware';
+import { ResetTokenMiddleware } from './shared/middlewares/business/reset-token.middleware';
 import { AuthUtilsModule } from './shared/utils/auth-util/auth-utils.module';
 import { HttpModule } from '@nestjs/axios'
-import { PrismaModule } from './infrastructure/config/prisma/prisma/prisma.module';
-import { LoginMiddlweare } from './shared/middlewares/auth/login.middleware';
-import { UserMiddleware } from './shared/middlewares/auth/user.middleware';
-import { ProductMiddleware } from './shared/middlewares/auth/product-middelware';
+import { PrismaModule } from 'src/infrastructure/config/prisma/prisma/prisma.module'
+import { LoginMiddlweare } from './shared/middlewares/business/login.middleware';
+import { UserMiddleware } from './shared/middlewares/business/user.middleware';
+import { ProductMiddleware } from './shared/middlewares/business/product.middelware';
 import * as redisStore from 'cache-manager-redis-store'
 import { CacheModule } from '@nestjs/cache-manager';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -16,7 +16,8 @@ import { EventGateway } from './event.gateway';
 import { EnvironmentConfigService } from './infrastructure/config/environment/environment/environment.service';
 import path, { join } from 'path';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-
+import { OrderModule } from './persistence/order/order.module';
+import { CartMiddleware } from './shared/middlewares/business/cart.middleware';
 
 @Module({
   imports: [PersistenceModule, EnvironmentConfigModule.register(), CacheModule.register({
@@ -48,7 +49,7 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
       }
     }),
     inject: [EnvironmentConfigService]
-  })],
+  }), OrderModule],
   providers: [EventGateway]
 })
 export class AppModule implements NestModule {
@@ -79,6 +80,9 @@ export class AppModule implements NestModule {
     }, {
       path: 'product/delete-product/:id', method: RequestMethod.POST
     })
+    consumer.apply(CartMiddleware).forRoutes(
+      { path: 'cart/get-item-by-user/:user_id', method: RequestMethod.GET }
+    )
   }
 }
 

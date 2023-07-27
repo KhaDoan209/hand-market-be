@@ -34,3 +34,11 @@ export const getImagePublicId = (userAvatar: string) => {
    const publicId = 'hand-market/' + fileName.split('.')[0];
    return publicId
 }
+
+
+export const generateOrderId = () => {
+   const timestamp = Date.now();
+   const timeString = String(timestamp).slice(-6);
+   const generatedString = "HM" + timeString;
+   return generatedString;
+}

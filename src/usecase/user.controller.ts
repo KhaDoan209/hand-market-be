@@ -11,10 +11,12 @@ import { Role } from 'src/domain/enums/roles.enum';
 import { Roles } from 'src/shared/decorators/role.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from 'src/infrastructure/common/cloudinary/cloudinary.service';
+import { StripeService } from 'src/infrastructure/common/stripe/stripe.service';
+import { CreateStripeCustomerDTO } from 'src/application/dto/stripe.dto';
 @UseGuards(AuthGuard('Jwt'))
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService, private readonly cloudinary: CloudinaryService) { }
+  constructor(private readonly userService: UserService, private readonly cloudinary: CloudinaryService, private readonly stripe: StripeService) { }
 
   @Get('/get-list-user')
   async getListUser(@Query() query: any) {
@@ -37,6 +39,13 @@ export class UserController {
     return customResponse(data, HttpStatus.OK, "Get user detail successfully")
   }
 
+  @Get('/get-stripe-customer-detail/:id')
+  async getStripeCustomerDetail(@Param('id') customerStripeId: string) {
+    let data = await this.stripe.getStripeCustomerDetail(customerStripeId)
+    return customResponse(data, HttpStatus.OK, "Get user detail successfully")
+  }
+
+
   @Get('/search-user-by-email')
   async searchUserByEmail(@Query() query: any) {
     const { email } = query
@@ -46,7 +55,6 @@ export class UserController {
 
   @Post('/update-user-address/:id')
   async updateUserAddress(@Param('id') userId: number, @Body() body: UpdateUserAddressDTO) {
-
     await this.userService.updateUserAddress(body, +userId)
     return customResponse(null, HttpStatus.CREATED, "Update user's address successfully")
   }
@@ -63,6 +71,19 @@ export class UserController {
     const data = await this.cloudinary.uploadFile(file)
     await this.userService.uploadAvatar(data, +userId)
     return customResponse(null, HttpStatus.CREATED, "Avatar has been uploaded")
+  }
+
+  @Post('/create-stripe-customer')
+  async createStripeCustomer(@Body() body: CreateStripeCustomerDTO) {
+    const { first_name, last_name, email } = body
+    let result = await this.stripe.createStripeCustomer(first_name, last_name, email)
+    return result
+  }
+
+  @Delete('/delete-stripe-customer/:id')
+  async deleteStripeCustomer(@Param('id') stripeId: string) {
+    let result = await this.stripe.deleteStripeCustomer(stripeId)
+    return result
   }
 
   @Roles(Role.Admin)

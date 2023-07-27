@@ -12,6 +12,7 @@ import { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 import { CloudinaryService } from 'src/infrastructure/common/cloudinary/cloudinary.service';
 import { UserCache } from 'src/domain/enums/cache.enum';
 import { User } from '@prisma/client';
+
 @Injectable()
 export class UserService implements UserRepository {
   constructor(private readonly prisma: PrismaService,

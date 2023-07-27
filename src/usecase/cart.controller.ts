@@ -5,11 +5,15 @@ import {
 import { ValidationPipe } from '@nestjs/common/pipes';
 import { CartService } from '../persistence/cart/cart.service';
 import { customResponse } from 'src/shared/utils/custom-functions/custom-response';
+import { Role } from 'src/domain/enums/roles.enum';
+import { UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { CreateCartDTO } from 'src/application/dto/cart.dto';
+
+@UseGuards(AuthGuard('Jwt'))
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) { }
-
   @Get('/get-item-by-user/:user_id')
   async getItemByUser(@Param('user_id') userId: number, @Query() query: any) {
     const { pageNumber, pageSize } = query
@@ -31,4 +35,6 @@ export class CartController {
   async removeItemFromCart(@Body(new ValidationPipe()) body: CreateCartDTO) {
     return await this.cartService.removeItemFromCart(body)
   }
+
+
 }
