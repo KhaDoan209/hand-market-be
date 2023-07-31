@@ -21,11 +21,15 @@ export class OrderController {
 
   @Post('create-new-order')
   async createNewOrder(@Body() body: CreateOrderDTO) {
-    const result = await this.orderService.createNewOrder(body)
-    if (result === HttpStatus.CREATED) {
-      return customResponse(null, HttpStatus.CREATED, "Order has been placed")
-    } else {
-      return customResponse(null, result, "Failed to create order")
+    try {
+      const result = await this.orderService.createNewOrder(body)
+      if (result === HttpStatus.CREATED) {
+        return customResponse(null, HttpStatus.CREATED, "Order has been placed")
+      } else {
+        return result
+      }
+    } catch (error) {
+      return customResponse(null, HttpStatus.INTERNAL_SERVER_ERROR, "Backend error")
     }
   }
 

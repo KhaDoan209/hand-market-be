@@ -12,12 +12,12 @@ export class PaymentController {
 
   // @Post('/setup-payment-intent')
 
-  @Post('/create-payment-intent/:customerId')
-  async createPaymentIntent(@Body() charge: CreateChargeDTO, @Param('id') customerId: string) {
-    console.log(charge)
-    let data = await this.stripe.createPaymentIntent(charge.amount, customerId)
-    return data
-  }
+  // @Post('/create-payment-intent/:customerId')
+  // async createPaymentIntent(@Body() charge: CreateChargeDTO, @Param('id') customerId: string) {
+  //   console.log(charge)
+  //   let data = await this.stripe.createPaymentIntent(charge.amount, customerId)
+  //   return data
+  // }
 
   @Delete('/cancel-payment-intent/:paytmentId')
   async cancelPaymentIntent(@Param('paytmentId') paytmentId: string) {

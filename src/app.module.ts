@@ -38,7 +38,7 @@ import { CartMiddleware } from './shared/middlewares/business/cart.middleware';
         }
       },
       defaults: {
-        from: `"No Reply" <${config.getMailFrom()}>`
+        from: `"Hand Market" <${config.getMailFrom()}>`
       },
       template: {
         dir: join(__dirname, 'src/templates/email'),
