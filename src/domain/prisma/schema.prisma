@@ -15,7 +15,6 @@ model Address {
   province String? @db.VarChar(100)
   user_id  Int     @unique(map: "user_id_UNIQUE")
   User     User    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "address_ibfk_1")
-  Order    Order[]
 
   @@index([user_id], map: "user_id_idx")
 }
@@ -54,16 +53,6 @@ model Category {
   created_by  String?   @db.VarChar(100)
   description String?
   Product     Product[]
-}
-
-model CreditCard {
-  id                Int     @id @unique(map: "myCreditCardIdUniqueConstraint") @default(autoincrement())
-  user_id           Int?
-  payment_method_id String
-  User              User?   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "credit_card_ibfk_1")
-  Order             Order[]
-
-  @@index([user_id], map: "credicard_ibfk_1_idx")
 }
 
 model Discount {
@@ -109,19 +98,18 @@ model Order {
   order_date     DateTime?      @db.Timestamp(0)
   status         String?        @db.VarChar(45)
   payment_status String?        @db.VarChar(45)
-  order_total    Decimal?       @db.Decimal(10, 0)
-  discount_total Decimal?       @db.Decimal(10, 0)
-  address_id     Int?
+  order_total    Decimal?       @db.Decimal(10, 2)
   credit_id      Int?
   user_id        Int?
   order_code     String?        @unique(map: "Order_unique_1")
+  street         String?
+  ward           String?
+  province       String?
+  district       String?
   Notification   Notification[]
-  Address        Address?       @relation(fields: [address_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_1")
-  CreditCard     CreditCard?    @relation(fields: [credit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_2")
   User           User?          @relation(fields: [user_id], references: [id], map: "order_ibfk_3")
   OrderDetail    OrderDetail[]
 
-  @@index([address_id], map: "address_idx")
   @@index([credit_id], map: "credit_idx")
   @@index([user_id], map: "user_idx")
 }
@@ -196,7 +184,6 @@ model User {
   Address            Address?
   Blog               Blog[]
   Cart               Cart[]
-  CreditCard         CreditCard[]
   Feedback           Feedback[]
   Notification       Notification[]
   Order              Order[]

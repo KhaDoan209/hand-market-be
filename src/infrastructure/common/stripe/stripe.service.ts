@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
 import { EnvironmentConfigService } from 'src/infrastructure/config/environment/environment/environment.service';
 import { CreateCreditCardDTO } from 'src/application/dto/credit-card.dto';
+import { Address, User } from '@prisma/client';
+import { MailerService } from '@nestjs-modules/mailer';
+import { OrderStatus } from 'src/domain/enums/order-status.enum';
+
 @Injectable()
 export class StripeService {
   private stripe: Stripe;
-  constructor(private readonly environmentConfigService: EnvironmentConfigService) {
+  constructor(private readonly environmentConfigService: EnvironmentConfigService, private readonly mailService: MailerService) {
     this.stripe = new Stripe(environmentConfigService.getStripeSecretKey(), {
       apiVersion: '2022-11-15'
     })
@@ -54,16 +58,52 @@ export class StripeService {
     return paymentMethod
   }
 
-  public async createPaymentIntent(amount: number, customerId: string) {
-    return this.stripe.paymentIntents.create({
+  public async createPaymentIntent(amount: number, customerId: string, cardId: string, shippingAddress: Address, user: User, order_code: string) {
+    const { last4 }: any = await this.stripe.customers.retrieveSource(customerId, cardId)
+    const charge = await this.stripe.paymentIntents.create({
       amount,
       customer: customerId,
-      // off_session:true,
-      // payment_method: paymentMethodId,
+      payment_method_types: ['card'],
+      payment_method: cardId,
       currency: 'vnd',
-      // confirm: true
-
+      confirm: true,
+      receipt_email: user.email,
+      shipping: {
+        name: user.first_name.trim() + user.last_name.trim(),
+        address: {
+          line1: shippingAddress.street.trim(),
+          line2: shippingAddress.ward.trim() + shippingAddress.district.trim(),
+          city: shippingAddress.province.trim(),
+          country: 'VN'
+        },
+        phone: user.phone
+      },
+      description: `Receipt for order ${order_code}`
     })
+    if (charge.status === "succeeded") {
+      await this.mailService.sendMail({
+        to: user.email,
+        subject: 'Thank you for your order!',
+        template: './confirmation',
+        context: {
+          customerName: `${user.first_name} ${user.last_name}`,
+          orderCode: `${order_code}`,
+          amount: `${amount.toLocaleString('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+          })}`,
+          email: `${user.email}`,
+          shippingAddress: `${shippingAddress.street}, ${shippingAddress.ward}, ${shippingAddress.district}, ${shippingAddress.province}`,
+          phoneNumber: `${user.phone}`,
+          last4CardPayment: `${last4}`
+        },
+      })
+      const orderStatus = {
+        status: charge.status,
+        payment_status: OrderStatus.Paid
+      }
+      return orderStatus
+    }
   }
 
   public async cancelPaymentIntent(id: string) {

@@ -1,12 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, Query } from '@nestjs/common';
-import { CreditCardService } from '../persistence/credit-card/credit-card.service';
 import { StripeService } from 'src/infrastructure/common/stripe/stripe.service';
 import { CreateCreditCardDTO } from 'src/application/dto/credit-card.dto';
 import { customResponse } from 'src/shared/utils/custom-functions/custom-response';
 
 @Controller('credit-card')
 export class CreditCardController {
-  constructor(private readonly creditCardService: CreditCardService,
+  constructor(
     private readonly stripe: StripeService) { }
 
   @Get('get-list-saved-card/:id')
@@ -16,9 +15,8 @@ export class CreditCardController {
   }
 
   @Post('add-new-card/:id')
-  async createNewCard(@Body() body: CreateCreditCardDTO, @Param('id') userId: number) {
-    const { id } = await this.stripe.createNewCard(body)
-    await this.creditCardService.createNewCard(+userId, id)
+  async createNewCard(@Body() body: CreateCreditCardDTO) {
+    const result = await this.stripe.createNewCard(body)
     return customResponse(null, HttpStatus.CREATED, 'New card added')
   }
 

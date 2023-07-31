@@ -43,12 +43,13 @@ export class AuthService implements AuthRepository {
         const { id } = await this.stripe.createStripeCustomer(user.first_name, user.last_name, user.email)
         await this.prisma.usePrisma().user.update({
           where: {
-            id: user.id
+            email: user.email,
           },
           data: {
             stripe_customer_id: id
           }
         })
+        user.stripe_customer_id = id;
       }
       await this.prisma.usePrisma().user.update({
         where: {

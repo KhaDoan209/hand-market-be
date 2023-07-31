@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .header {
+            text-align: center;
+            color: #374b73;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .info-table td {
+            padding: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        .thank-you {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .signature {
+            font-size: 16px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Payment Confirmation</div>
+        <div class="message">Dear {{customerName}},</div>
+        <div class="message">Thank you for your payment! We have successfully received your payment for the order #<b>{{orderCode}}</b></div>
+        <table class="info-table">
+            <tr>
+                <td style="font-weight:bold;">Amount:</td>
+                <td>{{amount}}</td>
+            </tr>
+            <tr>
+                <td style="font-weight:bold;">Email:</td>
+                <td>{{email}}</td>
+            </tr>
+            <tr>
+                <td style="font-weight:bold;">Shipping Address:</td>
+                <td>{{shippingAddress}}</td>
+            </tr>
+            <tr>
+                <td style="font-weight:bold;">Phone Number:</td>
+                <td>{{phoneNumber}}</td>
+            </tr>
+            <tr>
+                <td style="font-weight:bold;">Pay with card:</td>
+                <td> **** **** **** {{last4CardPayment}}</td>
+            </tr>
+        </table>
+        <div class="thank-you">Thank you for your purchase. If you have any questions or need further assistance, please feel free to contact us.</div>
+        <div class="signature">Best regards,<br>Hand Market Store</div>
+    </div>
+</body>
+</html>
