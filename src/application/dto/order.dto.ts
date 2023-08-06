@@ -7,5 +7,7 @@ export class CreateOrderDTO {
    @IsArray()
    product: any[];
    @IsString()
-   card_id: string
+   card_id: string;
+   @IsString()
+   shipping_method: string;
 }

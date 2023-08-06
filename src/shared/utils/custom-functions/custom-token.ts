@@ -12,6 +12,7 @@ export const generateAccessToken = async (jwtService: any, configService: Enviro
 
 export const generateRefreshToken = async (jwtService: any, configService: any, object: any) => {
    let data = {
+      id: object.id,
       email: object.email,
       password: object.password
    }

@@ -20,17 +20,16 @@ model Address {
 }
 
 model Blog {
-  id           Int            @id @default(autoincrement())
-  title        String?        @db.VarChar(255)
-  content      String?
-  image        String?
-  create_at    DateTime?      @db.Timestamp(0)
-  created_by   String?        @db.VarChar(100)
-  is_verified  Boolean?
-  user_id      Int?
-  User         User?          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "blog_ibfk_1")
-  Feedback     Feedback[]
-  Notification Notification[]
+  id          Int        @id @default(autoincrement())
+  title       String?    @db.VarChar(255)
+  content     String?
+  image       String?
+  create_at   DateTime?  @db.Timestamp(0)
+  created_by  String?    @db.VarChar(100)
+  is_verified Boolean?
+  user_id     Int?
+  User        User?      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "blog_ibfk_1")
+  Feedback    Feedback[]
 
   @@index([user_id], map: "blog_ibfk_1_idx")
 }
@@ -79,36 +78,44 @@ model Feedback {
 }
 
 model Notification {
-  id       Int     @id @default(autoincrement())
-  user_id  Int?
-  order_id Int?
-  blog_id  Int?
-  content  String?
-  User     User?   @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "noti_ibfk_1")
-  Order    Order?  @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "noti_ibfk_2")
-  Blog     Blog?   @relation(fields: [blog_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "noti_ibfk_3")
+  id          Int       @id @default(autoincrement())
+  user_id     Int?
+  order_id    Int?
+  content     String?
+  is_read     Boolean?  @default(false)
+  product_id  Int?
+  created_at  DateTime? @db.Timestamp(6)
+  link        String?
+  noti_type   String?
+  receiver_id Int?
+  User        User?     @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "noti_ibfk_1")
+  Order       Order?    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "noti_ibfk_2")
+  Product     Product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "noti_ibfk_4")
 
   @@index([user_id], map: "noti_ibfk_1_idx")
   @@index([order_id], map: "noti_ibfk_1_idx1")
-  @@index([blog_id], map: "noti_ibfk_3_idx")
 }
 
 model Order {
-  id             Int            @id @default(autoincrement())
-  order_date     DateTime?      @db.Timestamp(0)
-  status         String?        @db.VarChar(45)
-  payment_status String?        @db.VarChar(45)
-  order_total    Decimal?       @db.Decimal(10, 2)
-  credit_id      Int?
-  user_id        Int?
-  order_code     String?        @unique(map: "Order_unique_1")
-  street         String?
-  ward           String?
-  province       String?
-  district       String?
-  Notification   Notification[]
-  User           User?          @relation(fields: [user_id], references: [id], map: "order_ibfk_3")
-  OrderDetail    OrderDetail[]
+  id                          Int            @id @default(autoincrement())
+  order_date                  DateTime?      @db.Timestamp(0)
+  status                      String?        @db.VarChar(45)
+  payment_status              String?        @db.VarChar(45)
+  order_total                 Decimal?       @db.Decimal(10, 2)
+  credit_id                   Int?
+  user_id                     Int?
+  order_code                  String?        @unique(map: "Order_unique_1")
+  street                      String?
+  ward                        String?
+  province                    String?
+  district                    String?
+  shipper_id                  Int?
+  expected_delivery_date      DateTime?      @db.Timestamp(6)
+  actual_delivery_date        DateTime?      @db.Timestamp(6)
+  Notification                Notification[]
+  User                        User?          @relation(fields: [user_id], references: [id], map: "order_ibfk_3")
+  User_Order_shipper_idToUser User?          @relation("Order_shipper_idToUser", fields: [shipper_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_4")
+  OrderDetail                 OrderDetail[]
 
   @@index([credit_id], map: "credit_idx")
   @@index([user_id], map: "user_idx")
@@ -128,28 +135,29 @@ model OrderDetail {
 }
 
 model Product {
-  id          Int           @id @unique(map: "myProducttIdUniqueConstraint") @default(autoincrement())
-  name        String?       @db.VarChar(200)
-  image       String?
-  price       Decimal?      @default(0.00) @db.Decimal(10, 2)
-  description String?
-  in_stock    Boolean?      @default(true)
-  type        String?       @db.VarChar(45)
-  stars       Int?          @default(0)
-  brand       String?       @db.VarChar(100)
-  purchase    Int?          @default(0)
-  views       Int?          @default(0)
-  created_at  DateTime?     @db.Timestamp(0)
-  is_deleted  Boolean?      @default(false)
-  quantity    Int?          @default(0)
-  category_id Int
-  discount_id Int?
-  Cart        Cart[]
-  Feedback    Feedback[]
-  OrderDetail OrderDetail[]
-  Category    Category      @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "product_ibfk_1")
-  Discount    Discount?     @relation(fields: [discount_id], references: [id], onDelete: Cascade, map: "product_ibfk_2")
-  Rate        Rate[]
+  id           Int            @id @unique(map: "myProducttIdUniqueConstraint") @default(autoincrement())
+  name         String?        @db.VarChar(200)
+  image        String?
+  price        Decimal?       @default(0.00) @db.Decimal(10, 2)
+  description  String?
+  in_stock     Boolean?       @default(true)
+  type         String?        @db.VarChar(45)
+  stars        Int?           @default(0)
+  brand        String?        @db.VarChar(100)
+  purchase     Int?           @default(0)
+  views        Int?           @default(0)
+  created_at   DateTime?      @db.Timestamp(0)
+  is_deleted   Boolean?       @default(false)
+  quantity     Int?           @default(0)
+  category_id  Int
+  discount_id  Int?
+  Cart         Cart[]
+  Feedback     Feedback[]
+  Notification Notification[]
+  OrderDetail  OrderDetail[]
+  Category     Category       @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "product_ibfk_1")
+  Discount     Discount?      @relation(fields: [discount_id], references: [id], onDelete: Cascade, map: "product_ibfk_2")
+  Rate         Rate[]
 
   @@index([category_id], map: "category_id_idx")
   @@index([discount_id], map: "discount_id_idx")
@@ -168,27 +176,29 @@ model Reaction {
 }
 
 model User {
-  id                 Int            @id @unique(map: "id_UNIQUE") @default(autoincrement())
-  first_name         String?        @db.VarChar(50)
-  last_name          String?        @db.VarChar(50)
-  email              String?        @unique(map: "email_UNIQUE") @db.VarChar(100)
-  password           String?
-  role               String?        @db.VarChar(20)
-  is_locked          Boolean?       @default(false)
-  is_banned          Boolean?       @default(false)
-  refresh_token      String?
-  avatar             String?
-  is_deleted         Boolean?       @default(false)
-  phone              String?        @db.VarChar(20)
-  stripe_customer_id String?        @unique(map: "strip_key")
-  Address            Address?
-  Blog               Blog[]
-  Cart               Cart[]
-  Feedback           Feedback[]
-  Notification       Notification[]
-  Order              Order[]
-  Rate               Rate[]
-  Reaction           Reaction[]
+  id                           Int            @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  first_name                   String?        @db.VarChar(50)
+  last_name                    String?        @db.VarChar(50)
+  email                        String?        @unique(map: "email_UNIQUE") @db.VarChar(100)
+  password                     String?
+  role                         String?        @db.VarChar(20)
+  is_locked                    Boolean?       @default(false)
+  is_banned                    Boolean?       @default(false)
+  refresh_token                String?
+  avatar                       String?
+  is_deleted                   Boolean?       @default(false)
+  phone                        String?        @db.VarChar(20)
+  stripe_customer_id           String?        @unique(map: "strip_key")
+  socket_id                    String?        @unique(map: "socket_id")
+  Address                      Address?
+  Blog                         Blog[]
+  Cart                         Cart[]
+  Feedback                     Feedback[]
+  Notification                 Notification[]
+  Order                        Order[]
+  Order_Order_shipper_idToUser Order[]        @relation("Order_shipper_idToUser")
+  Rate                         Rate[]
+  Reaction                     Reaction[]
 }
 
 model Rate {

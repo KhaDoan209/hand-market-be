@@ -11,7 +11,11 @@ export class CategoryService implements CategoryRepository {
   }
 
   async getListCategory() {
-    return await this.prisma.findAll(PrismaEnum.Category)
+    return await this.prisma.usePrisma().category.findMany({
+      orderBy: {
+        name: 'asc'
+      }
+    })
   }
   async getProductTypes(id: number): Promise<any> {
     return ListProductTypes.find(item => {

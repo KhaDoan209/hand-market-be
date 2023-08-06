@@ -99,8 +99,8 @@ export class StripeService {
         },
       })
       const orderStatus = {
-        status: charge.status,
-        payment_status: OrderStatus.Paid
+        status: OrderStatus.Confirmed,
+        payment_status: charge.status
       }
       return orderStatus
     }

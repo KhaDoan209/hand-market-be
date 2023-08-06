@@ -48,5 +48,61 @@ export const ListProductTypes: Array<any> = [
          'Housekeeping',
          'Kitchen Appliances',
       ]
+   },
+   {
+      category_id: 6,
+      types_list: [
+         'Chicken Eggs',
+         'Duck Eggs',
+         'Others',
+      ]
+   },
+   {
+      category_id: 7,
+      types_list: [
+         'Dumpling, Tofu',
+         'Fish balls, Sausages',
+         'Prepared Meals',
+         'Frozen Vegetables',
+         'Kimchi'
+      ]
+   },
+   {
+      category_id: 8,
+      types_list: [
+         'Cooking Oils',
+         'Seasoning',
+      ]
+   },
+   {
+      category_id: 9,
+      types_list: [
+         'Cookies, Sponge Cakes',
+         'Chocolates',
+         'Candy',
+         'Snacks & Chips',
+         'Others',
+      ]
+   },
+   {
+      category_id: 10,
+      types_list: [
+         'Canned Foods',
+         'Processed Foods'
+      ]
+   },
+   {
+      category_id: 11,
+      types_list: [
+         'Dairy Products',
+         'Milks'
+      ]
+   },
+   {
+      category_id: 12,
+      types_list: [
+         'Bottled Tea & Coffee',
+         'Hot & Cold Tea & Coffee'
+      ]
    }
 ];
