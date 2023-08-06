@@ -1,15 +1,19 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateOrderDTO } from 'src/application/dto/order.dto';
 import { PrismaService } from 'src/infrastructure/config/prisma/prisma/prisma.service';
-import { OrderStatus } from 'src/domain/enums/order-status.enum';
+import { ShippingMethod } from 'src/domain/enums/shipping-method.enum';
 import { OrderRepository } from 'src/application/repositories/business/order.repositiory';
 import { customResponse, generateOrderId } from 'src/shared/utils/custom-functions/custom-response';
 import { getDataByPage } from 'src/shared/utils/custom-functions/custom-response';
 import { StripeService } from 'src/infrastructure/common/stripe/stripe.service';
 import { MailerService } from '@nestjs-modules/mailer';
+import { NotificationService } from '../notification/notification.service';
+import { CreateNotificationDTO } from 'src/application/dto/notification.dto';
+import { NotificationType } from 'src/domain/enums/notification.enum';
 @Injectable()
 export class OrderService implements OrderRepository {
-   constructor(private readonly prisma: PrismaService, private readonly stripe: StripeService, private readonly mailService: MailerService) {
+   constructor(private readonly prisma: PrismaService, private readonly stripe: StripeService, private readonly mailService: MailerService,
+      private readonly notiService: NotificationService) {
    }
    async getListOrderByUser(userId: number, pageNumber: number = 1, pageSize: number = 8,): Promise<any> {
       const totalRedcord = Math.ceil(await this.prisma.usePrisma().order.count({
@@ -29,7 +33,7 @@ export class OrderService implements OrderRepository {
 
    async createNewOrder(data: CreateOrderDTO): Promise<any> {
       try {
-         const { order_total, user_id, product, card_id } = data;
+         const { order_total, user_id, product, card_id, shipping_method } = data;
          const today = new Date();
          const shippingAddress = await this.prisma.usePrisma().address.findFirst({
             where: {
@@ -41,6 +45,14 @@ export class OrderService implements OrderRepository {
                id: user_id
             }
          })
+         let expected_delivery_date = new Date(today);
+         if (shipping_method === ShippingMethod.Standard) {
+            expected_delivery_date.setDate(today.getDate() + 5)
+         } else if (shipping_method === ShippingMethod.Fast) {
+            expected_delivery_date.setDate(today.getDate() + 3)
+         } else {
+            expected_delivery_date = today
+         }
          const newOrder = {
             order_code: generateOrderId(),
             order_total: order_total,
@@ -50,11 +62,12 @@ export class OrderService implements OrderRepository {
             ward: shippingAddress.ward,
             province: shippingAddress.province,
             district: shippingAddress.district,
+            expected_delivery_date,
          }
          const { status, payment_status } = await this.stripe.createPaymentIntent(order_total, user.stripe_customer_id, card_id, shippingAddress, user, newOrder.order_code)
          const orderCreated = await this.prisma.usePrisma().order.create({
             data: {
-               ...newOrder, payment_status: status.toUpperCase(), status: payment_status
+               ...newOrder, payment_status: payment_status, status: status.toUpperCase()
             }
          })
          Promise.all(product.map(async item => {
@@ -89,6 +102,14 @@ export class OrderService implements OrderRepository {
                });
             }
          }
+         const newNotification: CreateNotificationDTO = {
+            user_id: null,
+            order_id: orderCreated.id,
+            type: NotificationType.ORDER_PLACED,
+            product_id: null,
+            link: orderCreated.id.toString()
+         }
+         await this.notiService.createNewNotification(newNotification)
          return HttpStatus.CREATED
       } catch (error) {
          return customResponse(null, Number(error.statusCode), error.raw.message)

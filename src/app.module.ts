@@ -9,15 +9,15 @@ import { PrismaModule } from 'src/infrastructure/config/prisma/prisma/prisma.mod
 import { LoginMiddlweare } from './shared/middlewares/business/login.middleware';
 import { UserMiddleware } from './shared/middlewares/business/user.middleware';
 import { ProductMiddleware } from './shared/middlewares/business/product.middelware';
+import { CartMiddleware } from './shared/middlewares/business/cart.middleware';
+import { OrderMiddleware } from './shared/middlewares/business/order.middeware';
 import * as redisStore from 'cache-manager-redis-store'
 import { CacheModule } from '@nestjs/cache-manager';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { EventGateway } from './event.gateway';
+import { EventGateway } from './websocket/event.gateway';
 import { EnvironmentConfigService } from './infrastructure/config/environment/environment/environment.service';
 import path, { join } from 'path';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-import { OrderModule } from './persistence/order/order.module';
-import { CartMiddleware } from './shared/middlewares/business/cart.middleware';
 
 @Module({
   imports: [PersistenceModule, EnvironmentConfigModule.register(), CacheModule.register({
@@ -49,8 +49,9 @@ import { CartMiddleware } from './shared/middlewares/business/cart.middleware';
       }
     }),
     inject: [EnvironmentConfigService]
-  }), OrderModule],
+  })],
   providers: [EventGateway]
+
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
@@ -82,6 +83,9 @@ export class AppModule implements NestModule {
     })
     consumer.apply(CartMiddleware).forRoutes(
       { path: 'cart/get-item-by-user/:user_id', method: RequestMethod.GET }
+    )
+    consumer.apply(OrderMiddleware).forRoutes(
+      { path: 'order/get-item-by-user/:user_id', method: RequestMethod.GET }
     )
   }
 }

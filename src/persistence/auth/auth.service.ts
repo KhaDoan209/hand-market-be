@@ -7,7 +7,7 @@ import { PrismaService } from 'src/infrastructure/config/prisma/prisma/prisma.se
 import { PrismaEnum } from 'src/domain/enums/prisma.enum';
 import { EnvironmentConfigService } from 'src/infrastructure/config/environment/environment/environment.service';
 import { JwtService } from '@nestjs/jwt';
-import { generateAccessToken, generateRefreshToken, revertToken } from 'src/shared/utils/custom-functions/custom-token';
+import { generateAccessToken, generateRefreshToken, } from 'src/shared/utils/custom-functions/custom-token';
 import { CACHE_MANAGER } from '@nestjs/cache-manager/dist';
 import { Cache } from 'cache-manager'
 import { MailerService } from '@nestjs-modules/mailer';
@@ -21,7 +21,7 @@ export class AuthService implements AuthRepository {
     private readonly configService: EnvironmentConfigService,
     private readonly mailService: MailerService = null,
     @Inject(CACHE_MANAGER) private cache: Cache = null,
-    private readonly stripe: StripeService = null
+    private readonly stripe: StripeService = null,
   ) {
   }
 
@@ -107,7 +107,6 @@ export class AuthService implements AuthRepository {
     })
     if (user) {
       if (user.refresh_token !== null) {
-
         if (refresh_token === user.refresh_token) {
           const access_token = await generateAccessToken(this.jwtService, this.configService, user);
           return {

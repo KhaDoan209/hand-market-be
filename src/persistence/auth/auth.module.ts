@@ -5,6 +5,7 @@ import { PrismaModule } from '../../infrastructure/config/prisma/prisma/prisma.m
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategyService } from 'src/infrastructure/common/jwtStrategy.service';
 import { StripeModule } from 'src/infrastructure/common/stripe/stripe.module';
+
 @Module({
   imports: [PrismaModule, JwtModule.register({
     global: true

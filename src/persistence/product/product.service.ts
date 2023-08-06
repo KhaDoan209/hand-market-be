@@ -11,9 +11,17 @@ import { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 import { Product } from '@prisma/client';
 import { CloudinaryService } from 'src/infrastructure/common/cloudinary/cloudinary.service';
 import { getImagePublicId } from 'src/shared/utils/custom-functions/custom-response';
+import { NotificationService } from '../notification/notification.service';
+import { EventGateway } from 'src/websocket/event.gateway';
+import { NotificationType } from 'src/domain/enums/notification.enum';
+import { CreateNotificationDTO } from 'src/application/dto/notification.dto';
 @Injectable()
 export class ProductService implements ProductRepository {
-  constructor(@Inject(CACHE_MANAGER) private cache: Cache, private readonly prisma: PrismaService, private readonly cloudinary: CloudinaryService) {
+  constructor(
+    @Inject(CACHE_MANAGER) private cache: Cache,
+    private readonly prisma: PrismaService,
+    private readonly cloudinary: CloudinaryService,
+    private readonly notificationService: NotificationService) {
   }
 
   async getListProduct(pageNumber: number = 1, pageSize: number = 8): Promise<any> {
@@ -116,13 +124,21 @@ export class ProductService implements ProductRepository {
       created_at: today.toISOString(),
       type,
     }
-    await this.prisma.create(PrismaEnum.Product, newProduct)
+    const createdProduct = await this.prisma.create(PrismaEnum.Product, newProduct)
+    const newNotification: CreateNotificationDTO = {
+      type: NotificationType.NEW_PRODUCT_AVAILABLE,
+      link: createdProduct.id.toString(),
+      product_id: createdProduct.id,
+      user_id: null,
+      order_id: null,
+    }
     const listProduct = await this.prisma.usePrisma().product.findMany({
       where: {
         is_deleted: false
       },
     })
     await this.cache.set(ProductCache.ListProduct, listProduct)
+    await this.notificationService.createNewNotification(newNotification)
   }
 
   async updateProductInformation(data: UpdateProductDTO, productId: number): Promise<any> {
