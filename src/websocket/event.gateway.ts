@@ -4,8 +4,8 @@ import { AuthUtilService } from "../shared/utils/auth-util/auth-utils.service";
 import { PrismaService } from "../infrastructure/config/prisma/prisma/prisma.service";
 import { Role } from "src/domain/enums/roles.enum";
 import { ConfigService } from "@nestjs/config";
-import { PrismaEnum } from "src/domain/enums/prisma.enum";
-import { User } from "@prisma/client";
+import { SocketMessage } from "src/domain/enums/socket-message.enum";
+import { OrderStatus } from "src/domain/enums/order-status.enum";
 @WebSocketGateway(8081, {
    cors: true
 })
@@ -63,9 +63,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
                }
             })
          }
-         const socketsInRoom = this.server.sockets.adapter.rooms.get("user-room");
-         console.log("List socket remain", socketsInRoom);
-         return socket.disconnect()
+         return null
       } catch (error) {
          console.error(`Error during disconnection: ${error.message}`);
       }
@@ -75,12 +73,58 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
       return this.userSocketMap.get(userId);
    }
 
-   @SubscribeMessage('join_room')
-   handleJoinRoom(@MessageBody() data: any, @ConnectedSocket() socket: Socket) {
+   async joinRoom(id: number, roomId: string) {
+      const socketId = this.getSocketIdByUserId(id.toString());
+      if (socketId) {
+         const socket = this.server.sockets.sockets.get(socketId);
+         if (socket) {
+            socket.join(roomId);
+            console.log(`Account with socketId ${socketId} joined room ${roomId}`);
+         }
+      }
+   }
+   async leaveRoom(id: number, roomId: string) {
+      const socketId = this.getSocketIdByUserId(id.toString());
+      if (socketId) {
+         const socket = this.server.sockets.sockets.get(socketId);
+         if (socket) {
+            socket.leave(roomId);
+            console.log(`Account with socketId ${socketId} left room ${roomId}`);
+         } else {
+            console.log(`Socket not found for user with ID ${id}`);
+         }
+      } else {
+         console.log(`Socket ID not found for user with ID ${id}`);
+      }
+   }
+   @SubscribeMessage(SocketMessage.JoinRoom)
+   async handleJoinRoom(@MessageBody() data: any, @ConnectedSocket() socket: Socket) {
       const { userId, role } = data;
       if (role === Role.Shipper) {
-         socket.join(Role.Shipper)
+         const unresolvedOrder = await this.prisma.usePrisma().order.findFirst({
+            where: {
+               shipper_id: userId,
+               status: OrderStatus.OutOfDelivery
+            }
+         })
+         if (unresolvedOrder) {
+            await this.joinRoom(userId, unresolvedOrder.room_id);
+         } else {
+            socket.join(Role.Shipper)
+         }
+
       } else if (role === Role.User) {
+         const orderList = await this.prisma.usePrisma().order.findMany({
+            where: {
+               user_id: userId,
+               status: OrderStatus.OutOfDelivery
+            }
+         })
+         if (orderList.length > 0) {
+            for (const item of orderList) {
+               await this.joinRoom(userId, item.room_id);
+            }
+         }
          socket.join(Role.User)
       } else {
          socket.join(Role.Shipper)

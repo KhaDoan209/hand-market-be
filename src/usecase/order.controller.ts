@@ -1,11 +1,14 @@
 import {
-  Controller, Get, Post, Body, Patch, Param, Query, HttpStatus,
+  Controller, Get, Post, Body, Patch, Param, Query, HttpStatus, Res,
 } from '@nestjs/common';
 import { OrderService } from '../persistence/order/order.service';
 import { customResponse } from 'src/shared/utils/custom-functions/custom-response';
 import { UseGuards } from '@nestjs/common';
 import { CreateOrderDTO } from 'src/application/dto/order.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { Roles } from 'src/shared/decorators/role.decorator';
+import { Role } from 'src/domain/enums/roles.enum';
+import { query } from 'express';
 @UseGuards(AuthGuard('Jwt'))
 @Controller('order')
 export class OrderController {
@@ -18,6 +21,39 @@ export class OrderController {
     return customResponse(data, HttpStatus.OK, "Get list order by user successfully")
   }
 
+  @Roles(Role.Admin, Role.Shipper)
+  @Get('get-list-pending-delivery-order')
+  async getListPendingDeliveryOrder(@Query() query: any) {
+    const data = await this.orderService.getListPendingDeliveryOrder()
+    return customResponse(data, HttpStatus.OK, "Get list order by user successfully")
+  }
+
+  @Get('get-order-in-progress/:id')
+  async getOrderInProgress(@Param('id') shipperId: number) {
+    const result = await this.orderService.getOrderInProgress(+shipperId)
+    return customResponse(result, HttpStatus.OK, "Get order in progress successfully")
+  }
+
+  @Get('get-order-detail/:id')
+  async getOrderDetail(@Param('id') orderId: number) {
+    const result = await this.orderService.getOrderDetail(+orderId)
+    return customResponse(result, HttpStatus.OK, "Get order detail successfully")
+  }
+
+  @Get('get-list-waiting-done-order/:id')
+  async getListWaitingDoneOrder(@Param('id') shipperId: number) {
+    const data = await this.orderService.getListWaitingDoneOrder(+shipperId)
+    return customResponse(data, HttpStatus.OK, "Get list waiting done order successfully")
+  }
+
+  @Roles(Role.Admin, Role.Shipper)
+  @Get('get-list-done-order/:id')
+  async getListDoneOrder(@Param('id') shipperId: number) {
+    const data = await this.orderService.getListDoneOrder(+shipperId)
+    return customResponse(data, HttpStatus.OK, "Get list done order successfully")
+  }
+
+  @Roles(Role.User)
   @Post('create-new-order')
   async createNewOrder(@Body() body: CreateOrderDTO) {
     try {
@@ -32,5 +68,33 @@ export class OrderController {
     }
   }
 
+  @Roles(Role.Shipper)
+  @Post('take-an-order')
+  async takeAnOrder(@Query() query: any, @Res() res) {
+    try {
+      const { shipperId, orderId } = query
+      const result = await this.orderService.takeAnOrder(+shipperId, +orderId)
+      if (result === HttpStatus.CONFLICT) {
+        return res.status(HttpStatus.CONFLICT).send('You have unresolved order')
+      } else if (result === HttpStatus.NO_CONTENT) {
+        return res.status(HttpStatus.NO_CONTENT).send('The order has been taken by others')
+      } else if (result === HttpStatus.OK) {
+        return res.status(HttpStatus.OK).send('Order received')
+      }
+    } catch (error) {
+      return customResponse(null, HttpStatus.INTERNAL_SERVER_ERROR, "Backend Error")
+    }
+  }
 
+  @Post('change-order-status')
+  async changeOrderStatus(@Body() body: any) {
+    const { order_id, status } = body
+    await this.orderService.changeOrderStatus(+order_id, status)
+    return customResponse(null, HttpStatus.OK, "Sucessful")
+  }
+
+  @Post('dev-send-order')
+  async devSendOrder() {
+    return await this.orderService.devSendOrder()
+  }
 }
