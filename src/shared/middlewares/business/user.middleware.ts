@@ -19,7 +19,7 @@ export class UserMiddleware implements NestMiddleware {
             if (role === Role.Admin) {
                next();
             } else {
-               if (role === Role.User && id == userIdToOperate) {
+               if (role === Role.User || role === Role.Shipper && id == userIdToOperate) {
                   next();
                }
                else {

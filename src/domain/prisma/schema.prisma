@@ -109,9 +109,10 @@ model Order {
   ward                        String?
   province                    String?
   district                    String?
-  shipper_id                  Int?
   expected_delivery_date      DateTime?      @db.Timestamp(6)
   actual_delivery_date        DateTime?      @db.Timestamp(6)
+  room_id                     String?
+  shipper_id                  Int?
   Notification                Notification[]
   User                        User?          @relation(fields: [user_id], references: [id], map: "order_ibfk_3")
   User_Order_shipper_idToUser User?          @relation("Order_shipper_idToUser", fields: [shipper_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_4")

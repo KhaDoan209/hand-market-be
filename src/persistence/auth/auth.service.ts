@@ -4,7 +4,6 @@ import { AuthRepository } from 'src/application/repositories/business/auth.repos
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/domain/enums/roles.enum';
 import { PrismaService } from 'src/infrastructure/config/prisma/prisma/prisma.service';
-import { PrismaEnum } from 'src/domain/enums/prisma.enum';
 import { EnvironmentConfigService } from 'src/infrastructure/config/environment/environment/environment.service';
 import { JwtService } from '@nestjs/jwt';
 import { generateAccessToken, generateRefreshToken, } from 'src/shared/utils/custom-functions/custom-token';
@@ -12,7 +11,8 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager/dist';
 import { Cache } from 'cache-manager'
 import { MailerService } from '@nestjs-modules/mailer';
 import { StripeService } from 'src/infrastructure/common/stripe/stripe.service';
-
+import { EventGateway } from 'src/websocket/event.gateway';
+import { OrderStatus } from 'src/domain/enums/order-status.enum';
 @Injectable()
 export class AuthService implements AuthRepository {
   constructor(
@@ -22,6 +22,7 @@ export class AuthService implements AuthRepository {
     private readonly mailService: MailerService = null,
     @Inject(CACHE_MANAGER) private cache: Cache = null,
     private readonly stripe: StripeService = null,
+    private readonly eventGateway: EventGateway = null
   ) {
   }
 
@@ -50,6 +51,30 @@ export class AuthService implements AuthRepository {
           }
         })
         user.stripe_customer_id = id;
+      }
+      if (user.role === Role.User) {
+        const orderList = await this.prisma.usePrisma().order.findMany({
+          where: {
+            user_id: user.id,
+            status: OrderStatus.OutOfDelivery
+          }
+        })
+        if (orderList.length > 0) {
+          for (const item of orderList) {
+            await this.eventGateway.joinRoom(user.id, item.room_id);
+          }
+        }
+      }
+      else if (user.role === Role.Shipper) {
+        const unresolvedOrder = await this.prisma.usePrisma().order.findFirst({
+          where: {
+            shipper_id: user.id,
+            status: OrderStatus.OutOfDelivery
+          }
+        })
+        if (unresolvedOrder) {
+          await this.eventGateway.joinRoom(user.id, unresolvedOrder.room_id);
+        }
       }
       await this.prisma.usePrisma().user.update({
         where: {
