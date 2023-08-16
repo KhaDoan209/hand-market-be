@@ -7,6 +7,7 @@ import { customResponse, generateOrderId } from 'src/shared/utils/custom-functio
 import { getDataByPage } from 'src/shared/utils/custom-functions/custom-response';
 import { StripeService } from 'src/infrastructure/common/stripe/stripe.service';
 import { MailerService } from '@nestjs-modules/mailer';
+import { MapboxService } from 'src/infrastructure/common/map-box/mapbox.service';
 import { NotificationService } from '../notification/notification.service';
 import { CreateNotificationDTO } from 'src/application/dto/notification.dto';
 import { NotificationType } from 'src/domain/enums/notification.enum';
@@ -19,8 +20,10 @@ import { SocketMessage } from 'src/domain/enums/socket-message.enum';
 export class OrderService implements OrderRepository {
    constructor(private readonly prisma: PrismaService, private readonly stripe: StripeService, private readonly mailService: MailerService,
       private readonly notiService: NotificationService,
-      private readonly eventGateway: EventGateway) {
+      private readonly eventGateway: EventGateway,
+      private readonly mapbox: MapboxService) {
    }
+
    async getListOrderByUser(userId: number, pageNumber: number = 1, pageSize: number = 8,): Promise<any> {
       const totalRedcord = Math.ceil(await this.prisma.usePrisma().order.count({
          where: {
@@ -40,7 +43,7 @@ export class OrderService implements OrderRepository {
       const listPendingOrder = await this.prisma.usePrisma().order.findMany({
          where: {
             shipper_id: null,
-            status: OrderStatus.Confirmed
+            status: OrderStatus.Freepick
          },
          orderBy: {
             order_date: 'desc'
@@ -170,9 +173,10 @@ export class OrderService implements OrderRepository {
             expected_delivery_date,
          }
          const { status, payment_status } = await this.stripe.createPaymentIntent(order_total, user.stripe_customer_id, card_id, shippingAddress, user, newOrder.order_code)
+         const coordinates = await this.mapbox.getCoordinates(`${shippingAddress.street + ', ' + shippingAddress.ward + ', ' + shippingAddress.province}`)
          const orderCreated = await this.prisma.usePrisma().order.create({
             data: {
-               ...newOrder, payment_status: payment_status, status: status
+               ...newOrder, payment_status: payment_status, status: status, long: coordinates.longitude, lat: coordinates.latitude
             }
          })
          Promise.all(product.map(async item => {
@@ -216,23 +220,40 @@ export class OrderService implements OrderRepository {
          }
          const userNotificationPromise = this.notiService.createNewNotification(newNotification);
          const notifyShippers = async () => {
-            const pickedUpOrder = await this.prisma.usePrisma().order.findFirst({
-               where: {
-                  id: orderCreated.id
-               },
-               include: {
-                  User: true,
-               }
-            })
             const roomSockets = this.eventGateway.server.sockets.adapter.rooms.get(Role.Shipper);
             if (roomSockets) {
                const socketIds = Array.from(roomSockets);
                for (const id of socketIds) {
-                  this.eventGateway.server.to(id).emit(SocketMessage.NewOrder, pickedUpOrder)
+                  let pickedUpOrder = await this.prisma.usePrisma().order.findFirst({
+                     where: {
+                        id: orderCreated.id,
+                        status: OrderStatus.Confirmed
+                     },
+                     include: {
+                        User: true,
+                     }
+                  })
+                  this.eventGateway.server.to(id).emit(SocketMessage.NewOrder, pickedUpOrder);
                   await new Promise((resolve) => setTimeout(resolve, 6000));
                }
+               let pickedUpOrder = await this.prisma.usePrisma().order.findFirst({
+                  where: {
+                     id: orderCreated.id,
+                  },
+               })
+               if (pickedUpOrder.status === OrderStatus.Confirmed) {
+                  await this.prisma.usePrisma().order.update({
+                     where: {
+                        id: pickedUpOrder.id,
+                     }, data: {
+                        status: OrderStatus.Freepick
+                     }
+                  })
+                  return this.eventGateway.server.to(Role.Shipper).emit(SocketMessage.NewFreepick);
+               }
             }
-         };
+         }
+
          await userNotificationPromise;
          setTimeout(() => {
             notifyShippers();
@@ -290,6 +311,7 @@ export class OrderService implements OrderRepository {
                   link: receivedOrder.id.toString(),
                }
                await this.notiService.createNewNotification(newNotification)
+               this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.UpdateFreepick)
                this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.UpdateOrderInProgress)
                this.eventGateway.server.to(userSocketId).emit(SocketMessage.OrderStatusUpdate)
                this.eventGateway.server.to(Role.Shipper).emit(SocketMessage.UpdateFreepick)
@@ -360,6 +382,33 @@ export class OrderService implements OrderRepository {
       }
    }
 
+   async cancelAnOrder(orderId: number, cancel_reason: string): Promise<any> {
+      const order = await this.prisma.usePrisma().order.findFirst({
+         where: {
+            id: orderId
+         }
+      })
+      await this.prisma.usePrisma().order.update({
+         where: {
+            id: orderId,
+         },
+         data: {
+            status: OrderStatus.Canceled,
+            cancel_reason: cancel_reason
+         }
+      })
+      const newNotification: CreateNotificationDTO = {
+         user_id: null,
+         order_id: order.id,
+         type: NotificationType.ORDER_CANCELLED,
+         product_id: null,
+         link: order.id.toString(),
+      }
+      await this.notiService.createNewNotification(newNotification)
+      const shipperSocket = this.eventGateway.getSocketIdByUserId(order.shipper_id.toString())
+      this.eventGateway.server.to(shipperSocket).emit(SocketMessage.UpdateOrderInProgress)
+   }
+
    async devSendOrder() {
       const order = {
          id: 77,
@@ -405,4 +454,5 @@ export class OrderService implements OrderRepository {
       }
       return roomSockets
    }
+
 }

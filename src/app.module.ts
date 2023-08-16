@@ -16,11 +16,11 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { EventGateway } from './websocket/event.gateway';
 import { EnvironmentConfigService } from './infrastructure/config/environment/environment/environment.service';
+import { MapboxModule } from './infrastructure/common/map-box/mapbox.module';
 import path, { join } from 'path';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-
 @Module({
-  imports: [PersistenceModule, EnvironmentConfigModule.register(), CacheModule.register({
+  imports: [MapboxModule, PersistenceModule, EnvironmentConfigModule.register(), CacheModule.register({
     store: redisStore,
     ttl: 300,
     isGlobal: true,

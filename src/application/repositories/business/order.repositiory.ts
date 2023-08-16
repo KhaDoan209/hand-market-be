@@ -10,4 +10,5 @@ export interface OrderRepository {
    changeOrderStatus(orderId: number, status: string): Promise<any>;
    takeAnOrder(orderId: number, shipperId: number): Promise<any>;
    createNewOrder(data: CreateOrderDTO): Promise<any>;
+   cancelAnOrder(orderId: number, cancel_reason: string): Promise<any>;
 }
