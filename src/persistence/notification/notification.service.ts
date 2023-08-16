@@ -177,6 +177,27 @@ export class NotificationService implements NotificationRepository {
           this.eventGateway.server.to(socketIdOrderDone).emit(SocketMessage.NewNotification)
         }
         break;
+      case NotificationType.ORDER_CANCELLED:
+        const orderCanceled = await this.prisma.usePrisma().order.findFirst({
+          where: {
+            id: order_id
+          }
+        })
+        await this.prisma.usePrisma().notification.create({
+          data: {
+            ...newNotification,
+            is_read: false,
+            created_at: today.toISOString(),
+            content: orderCanceled.order_code + " - " + NotificationContent.ORDER_CANCELLED,
+            noti_type: type,
+            receiver_id: orderCanceled.user_id,
+          }
+        })
+        const userOrderCanceled = this.eventGateway.getSocketIdByUserId(orderCanceled.user_id.toString())
+        if (userOrderCanceled) {
+          this.eventGateway.server.to(userOrderCanceled).emit(SocketMessage.NewNotification)
+        }
+        break;
       default:
         break;
     }

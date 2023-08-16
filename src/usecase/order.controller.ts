@@ -93,6 +93,12 @@ export class OrderController {
     return customResponse(null, HttpStatus.OK, "Sucessful")
   }
 
+  @Post('cancel-order/')
+  async cancelAnOrder(@Body() body: any) {
+    const { cancel_reason, order_id } = body
+    await this.orderService.cancelAnOrder(+order_id, cancel_reason)
+  }
+
   @Post('dev-send-order')
   async devSendOrder() {
     return await this.orderService.devSendOrder()

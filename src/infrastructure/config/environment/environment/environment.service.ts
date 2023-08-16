@@ -36,4 +36,7 @@ export class EnvironmentConfigService {
    getFrontEndURL(): any {
       return this.config.get<string>('FRONTEND_URL')
    }
+   getMapBoxToken(): any {
+      return this.config.get<string>('MAP_BOX_TOKEN')
+   }
 }
