@@ -57,6 +57,8 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(ResetTokenMiddleware).exclude(
       { path: 'auth/login', method: RequestMethod.POST },
+      { path: 'auth/facebook-login', method: RequestMethod.POST },
+      { path: 'auth/google-login', method: RequestMethod.POST },
       { path: 'auth/register', method: RequestMethod.POST },
       { path: 'auth/logout/:id', method: RequestMethod.POST },
       { path: 'auth/check-existed-email', method: RequestMethod.GET },

@@ -24,6 +24,19 @@ export class CategoryService implements CategoryRepository {
       }
     })
   }
+  async countProductByCategory(): Promise<any> {
+    const result = await this.prisma.usePrisma().category.findMany({
+      include: {
+        Product: true
+      }
+    })
+    const categoryCounts = result.map(category => ({
+      id: category.id,
+      name: category.name,
+      productCount: category.Product.length
+    }));
+    return categoryCounts
+  }
   async getCategoryDetail(id: number): Promise<any> {
     return
   }

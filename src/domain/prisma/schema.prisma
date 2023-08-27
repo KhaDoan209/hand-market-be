@@ -194,6 +194,7 @@ model User {
   phone                        String?        @db.VarChar(20)
   stripe_customer_id           String?        @unique(map: "strip_key")
   socket_id                    String?        @unique(map: "socket_id")
+  app_id                       String?        @unique(map: "app_id")
   Address                      Address?
   Blog                         Blog[]
   Cart                         Cart[]
