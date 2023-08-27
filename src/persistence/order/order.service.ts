@@ -23,9 +23,47 @@ export class OrderService implements OrderRepository {
       private readonly eventGateway: EventGateway,
       private readonly mapbox: MapboxService) {
    }
+   async getListOrder(orderStatus?: string, pageNumber?: number, pageSize?: number): Promise<any> {
+      let orders: any
+      const totalRecord = await this.prisma.usePrisma().order.count({
+         where: {
+            status: orderStatus ? orderStatus : {}
+         }
+      })
+      if (pageNumber && pageSize) {
+         orders = await this.prisma.usePrisma().order.findMany({
+            where: {
+               status: orderStatus ? orderStatus : {}
+            }, include: {
+               User: true
+            }
+         })
+         return getDataByPage(pageNumber, pageSize, totalRecord, orders)
+      } else {
+         orders = await this.prisma.usePrisma().order.findMany({
+            where: {
+               status: orderStatus ? orderStatus : {}
+            }, include: {
+               User: true
+            }
+         })
+         return getDataByPage(undefined, undefined, totalRecord, orders)
+      }
+   }
+
+
+   async getListOrderByUserForAdmin(userId: number, orderStatus?: string): Promise<any> {
+      const result = await this.prisma.usePrisma().order.findMany({
+         where: {
+            user_id: userId,
+            status: orderStatus ? orderStatus : {}
+         }
+      })
+      return result
+   }
 
    async getListOrderByUser(userId: number, pageNumber: number = 1, pageSize: number = 8,): Promise<any> {
-      const totalRedcord = Math.ceil(await this.prisma.usePrisma().order.count({
+      const totalRecord = Math.ceil(await this.prisma.usePrisma().order.count({
          where: {
             user_id: userId
          }
@@ -37,7 +75,7 @@ export class OrderService implements OrderRepository {
             User: true
          }
       })
-      return getDataByPage(pageNumber, pageSize, totalRedcord, listOrder)
+      return getDataByPage(pageNumber, pageSize, totalRecord, listOrder)
    }
    async getListPendingDeliveryOrder() {
       const listPendingOrder = await this.prisma.usePrisma().order.findMany({
@@ -199,6 +237,18 @@ export class OrderService implements OrderRepository {
             })
          }))
          for (const item of product) {
+            const productToIncreasePurchase = await this.prisma.usePrisma().product.findFirst({
+               where: {
+                  id: item.id
+               }
+            })
+            await this.prisma.usePrisma().product.update({
+               where: {
+                  id: productToIncreasePurchase.id
+               }, data: {
+                  purchase: productToIncreasePurchase.purchase + 1
+               }
+            })
             const cartItem = await this.prisma.usePrisma().cart.findFirst({
                where: {
                   user_id: user_id,
@@ -219,6 +269,7 @@ export class OrderService implements OrderRepository {
             link: orderCreated.id.toString()
          }
          const userNotificationPromise = this.notiService.createNewNotification(newNotification);
+
          const notifyShippers = async () => {
             const roomSockets = this.eventGateway.server.sockets.adapter.rooms.get(Role.Shipper);
             if (roomSockets) {
@@ -236,27 +287,26 @@ export class OrderService implements OrderRepository {
                   this.eventGateway.server.to(id).emit(SocketMessage.NewOrder, pickedUpOrder);
                   await new Promise((resolve) => setTimeout(resolve, 6000));
                }
-               let pickedUpOrder = await this.prisma.usePrisma().order.findFirst({
-                  where: {
-                     id: orderCreated.id,
-                  },
-               })
-               if (pickedUpOrder.status === OrderStatus.Confirmed) {
-                  await this.prisma.usePrisma().order.update({
-                     where: {
-                        id: pickedUpOrder.id,
-                     }, data: {
-                        status: OrderStatus.Freepick
-                     }
-                  })
-                  return this.eventGateway.server.to(Role.Shipper).emit(SocketMessage.NewFreepick);
-               }
             }
          }
-
          await userNotificationPromise;
-         setTimeout(() => {
-            notifyShippers();
+         setTimeout(async () => {
+            await notifyShippers();
+            let pickedUpOrder = await this.prisma.usePrisma().order.findFirst({
+               where: {
+                  id: orderCreated.id,
+               },
+            })
+            if (pickedUpOrder.status === OrderStatus.Confirmed) {
+               await this.prisma.usePrisma().order.update({
+                  where: {
+                     id: pickedUpOrder.id,
+                  }, data: {
+                     status: OrderStatus.Freepick
+                  }
+               })
+               return this.eventGateway.server.to(Role.Shipper).emit(SocketMessage.NewFreepick);
+            }
          }, 1000);
          return HttpStatus.CREATED;
       } catch (error) {
@@ -365,6 +415,7 @@ export class OrderService implements OrderRepository {
          await this.notiService.createNewNotification(newNotification)
          this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.UpdateOrderInProgress)
          this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.UpdateWaitingDone)
+         await this.eventGateway.joinRoom(order.shipper_id, Role.Shipper)
          return this.eventGateway.server.to(userSocketId).emit(SocketMessage.OrderStatusUpdate)
       }
       else if (status === OrderStatus.Done) {

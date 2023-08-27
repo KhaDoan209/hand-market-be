@@ -14,12 +14,29 @@ import { query } from 'express';
 export class OrderController {
   constructor(private readonly orderService: OrderService) { }
 
+  @Roles(Role.Admin)
+  @Get('get-list-order')
+  async getListOrder(@Query() query: any) {
+    const { orderStatus, pageNumber, pageSize } = query
+    const result = await this.orderService.getListOrder(orderStatus, +pageNumber, +pageSize)
+    return customResponse(result, HttpStatus.OK, "Get list order successfully")
+  }
+
+  @Roles(Role.Admin)
+  @Get('get-list-order-by-user-for-admin/:id')
+  async getListOrderByUserForAdmin(@Query() query: any, @Param('id') userId: number) {
+    const { orderStatus } = query
+    const data = await this.orderService.getListOrderByUserForAdmin(+userId, orderStatus)
+    return customResponse(data, HttpStatus.OK, "Get list order by user successfully")
+  }
+
   @Get('get-order-by-user/:user_id')
   async getListOrderByUser(@Param('user_id') userId: number, @Query() query: any) {
     const { pageNumber, pageSize } = query
     const data = await this.orderService.getListOrderByUser(+userId, +pageNumber, +pageSize)
     return customResponse(data, HttpStatus.OK, "Get list order by user successfully")
   }
+
 
   @Roles(Role.Admin, Role.Shipper)
   @Get('get-list-pending-delivery-order')

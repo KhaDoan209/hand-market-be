@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { AuthLoginDTO, AuthRegisterDTO } from 'src/application/dto/auth.dto';
+import { AuthLoginDTO, AuthRegisterDTO, FacebookLoginDTO, GoogleLoginDTO } from 'src/application/dto/auth.dto';
 import { AuthRepository } from 'src/application/repositories/business/auth.repository';
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/domain/enums/roles.enum';
@@ -169,5 +169,195 @@ export class AuthService implements AuthRepository {
     } else {
       return true
     }
+  }
+
+  async loginWithFacebook(data: FacebookLoginDTO): Promise<any> {
+    const { email } = data
+    const user = await this.prisma.usePrisma().user.findFirst({
+      where: {
+        email,
+      },
+      include: {
+        Address: true
+      }
+    })
+    if (user) {
+      if (user.role === Role.User) {
+        const orderList = await this.prisma.usePrisma().order.findMany({
+          where: {
+            user_id: user.id,
+            status: OrderStatus.OutOfDelivery
+          }
+        })
+        if (orderList.length > 0) {
+          for (const item of orderList) {
+            await this.eventGateway.joinRoom(user.id, item.room_id);
+          }
+        }
+      } else if (user.role === Role.Shipper) {
+        const unresolvedOrder = await this.prisma.usePrisma().order.findFirst({
+          where: {
+            shipper_id: user.id,
+            status: OrderStatus.OutOfDelivery
+          }
+        })
+        if (unresolvedOrder) {
+          await this.eventGateway.joinRoom(user.id, unresolvedOrder.room_id);
+        }
+      }
+      await this.prisma.usePrisma().user.update({
+        where: {
+          id: user.id
+        },
+        data: data
+      })
+      const access_token = await generateAccessToken(this.jwtService, this.configService, user);
+      const refresh_token = await generateRefreshToken(this.jwtService, this.configService, user);
+      await this.prisma.usePrisma().user.update({
+        where: {
+          email,
+        },
+        data: {
+          refresh_token: refresh_token
+        }
+      })
+      return {
+        access_token,
+        refresh_token,
+        userToResponse: user
+      }
+    } else {
+      const newUser = await this.prisma.usePrisma().user.create({
+        data: { ...data, role: Role.User, last_name: '' }
+      })
+      const userCreated = await this.prisma.usePrisma().user.findFirst({
+        where: {
+          id: newUser.id
+        }
+      })
+      if (userCreated.stripe_customer_id === null) {
+        const { id } = await this.stripe.createStripeCustomer(userCreated.first_name, userCreated.last_name, userCreated.email)
+        await this.prisma.usePrisma().user.update({
+          where: {
+            email: userCreated.email,
+          },
+          data: {
+            stripe_customer_id: id
+          }
+        })
+        userCreated.stripe_customer_id = id;
+      }
+      const access_token = await generateAccessToken(this.jwtService, this.configService, userCreated);
+      const refresh_token = await generateRefreshToken(this.jwtService, this.configService, userCreated);
+      await this.prisma.usePrisma().user.update({
+        where: {
+          email,
+        },
+        data: {
+          refresh_token: refresh_token
+        }
+      })
+      return {
+        access_token,
+        refresh_token,
+        userToResponse: userCreated
+      }
+    }
+
+  }
+
+  async loginWithGoogle(data: GoogleLoginDTO): Promise<any> {
+    const { email } = data
+    const user = await this.prisma.usePrisma().user.findFirst({
+      where: {
+        email,
+      },
+      include: {
+        Address: true
+      }
+    })
+    if (user) {
+      if (user.role === Role.User) {
+        const orderList = await this.prisma.usePrisma().order.findMany({
+          where: {
+            user_id: user.id,
+            status: OrderStatus.OutOfDelivery
+          }
+        })
+        if (orderList.length > 0) {
+          for (const item of orderList) {
+            await this.eventGateway.joinRoom(user.id, item.room_id);
+          }
+        }
+      } else if (user.role === Role.Shipper) {
+        const unresolvedOrder = await this.prisma.usePrisma().order.findFirst({
+          where: {
+            shipper_id: user.id,
+            status: OrderStatus.OutOfDelivery
+          }
+        })
+        if (unresolvedOrder) {
+          await this.eventGateway.joinRoom(user.id, unresolvedOrder.room_id);
+        }
+      }
+      await this.prisma.usePrisma().user.update({
+        where: {
+          id: user.id
+        },
+        data: data
+      })
+      const access_token = await generateAccessToken(this.jwtService, this.configService, user);
+      const refresh_token = await generateRefreshToken(this.jwtService, this.configService, user);
+      await this.prisma.usePrisma().user.update({
+        where: {
+          email,
+        },
+        data: {
+          refresh_token: refresh_token
+        }
+      })
+      return {
+        access_token,
+        refresh_token,
+        userToResponse: user
+      }
+    } else {
+      const newUser = await this.prisma.usePrisma().user.create({
+        data: { ...data, role: Role.User }
+      })
+      const userCreated = await this.prisma.usePrisma().user.findFirst({
+        where: {
+          id: newUser.id
+        }
+      })
+      if (userCreated.stripe_customer_id === null) {
+        const { id } = await this.stripe.createStripeCustomer(userCreated.first_name, userCreated.last_name, userCreated.email)
+        await this.prisma.usePrisma().user.update({
+          where: {
+            email: userCreated.email,
+          },
+          data: {
+            stripe_customer_id: id
+          }
+        })
+        userCreated.stripe_customer_id = id;
+      }
+      const access_token = await generateAccessToken(this.jwtService, this.configService, userCreated);
+      const refresh_token = await generateRefreshToken(this.jwtService, this.configService, userCreated);
+      await this.prisma.usePrisma().user.update({
+        where: {
+          email,
+        },
+        data: {
+          refresh_token: refresh_token
+        }
+      })
+      return {
+        access_token,
+        refresh_token,
+        userToResponse: userCreated
+      }
+    }
+
   }
 }  

@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Body, Param, Delete,  Query, HttpStatus, UploadedFile,
+  Controller, Get, Post, Body, Param, Delete, Query, HttpStatus, UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
@@ -43,7 +43,14 @@ export class ProductController {
     const data = await this.productService.getListProductByDiscount(+pageNumber, +pageSize)
     return customResponse(data, HttpStatus.OK, "Get list product by discount successfully")
   }
-  
+
+  @Get('/get-list-product-by-category')
+  async getListProductByCategory(@Query() query: any) {
+    const { category_id, pageNumber, pageSize } = query
+    const data = await this.productService.getListProductByCategory(category_id, +pageNumber, +pageSize)
+    return customResponse(data, HttpStatus.OK, "Get list product by category successfully")
+  }
+
   @Post('/create-new-product')
   @UseGuards(AuthGuard('Jwt'))
   @Roles(Role.Admin)

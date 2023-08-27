@@ -1,6 +1,8 @@
 import { CreateOrderDTO } from "src/application/dto/order.dto";
 
 export interface OrderRepository {
+   getListOrder(orderStatus: string, pageNumber: number, pageSize: number): Promise<any>
+   getListOrderByUserForAdmin(userId: number, orderStatus: string): Promise<any>;
    getListOrderByUser(userId: number, pageNumber: number, pageSize: number): Promise<any>;
    getOrderInProgress(id: number): Promise<any>;
    getListPendingDeliveryOrder(pageNumber: number, pageSize: number): Promise<any>;

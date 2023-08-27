@@ -15,6 +15,7 @@ import { NotificationService } from '../notification/notification.service';
 import { EventGateway } from 'src/websocket/event.gateway';
 import { NotificationType } from 'src/domain/enums/notification.enum';
 import { CreateNotificationDTO } from 'src/application/dto/notification.dto';
+import { throttleTime } from 'rxjs';
 @Injectable()
 export class ProductService implements ProductRepository {
   constructor(
@@ -60,39 +61,43 @@ export class ProductService implements ProductRepository {
       await this.cache.set(ProductCache.ProductDetail + productId, productDetail, { ttl: 30 } as any)
       return productDetail
     }
-
   }
 
-  async getListProductByPurchase(pageNumber: number = 1, pageSize: number = 5): Promise<any> {
-    const listProductByPurchase = await this.prisma.usePrisma().product.findMany({
-      orderBy: {
-        purchase: 'desc'
-      },
-      include: {
-        Discount: true,
-        Category: true,
-      },
-      take: pageSize,
-    });
+  async getListProductByPurchase(pageNumber?: number, pageSize?: number): Promise<any> {
+    let result: any
     const totalRecord = Math.ceil(await this.prisma.usePrisma().product.count({
       where: {
         is_deleted: false
       }
     }))
-    return getDataByPage(pageNumber, pageSize, totalRecord, listProductByPurchase)
+    if (pageNumber && pageSize) {
+      result = await this.prisma.usePrisma().product.findMany({
+        orderBy: {
+          purchase: 'desc'
+        },
+        include: {
+          Discount: true,
+          Category: true,
+        },
+        take: pageSize,
+      });
+      return getDataByPage(pageNumber, pageSize, totalRecord, result)
+    } else {
+      result = await this.prisma.usePrisma().product.findMany({
+        orderBy: {
+          purchase: 'desc'
+        },
+        include: {
+          Discount: true,
+          Category: true,
+        },
+      });
+      return getDataByPage(undefined, undefined, totalRecord, result)
+    }
   }
 
-  async getListProductByDiscount(pageNumber: number, pageSize: number): Promise<any> {
-    const listProductByDiscount = await this.prisma.usePrisma().product.findMany({
-      include: {
-        Discount: true
-      },
-      orderBy: {
-        Discount: {
-          percentage: 'desc'
-        }
-      }
-    });
+  async getListProductByDiscount(pageNumber?: number, pageSize?: number): Promise<any> {
+    let result: any
     const totalRecord = Math.ceil(await this.prisma.usePrisma().product.count({
       where: {
         Discount: {
@@ -102,7 +107,62 @@ export class ProductService implements ProductRepository {
         }
       }
     }))
-    return getDataByPage(pageNumber, pageSize, totalRecord, listProductByDiscount)
+    if (pageNumber && pageSize) {
+      result = await this.prisma.usePrisma().product.findMany({
+        include: {
+          Discount: true
+        },
+        orderBy: {
+          Discount: {
+            percentage: 'desc'
+          }
+        }
+      });
+      return getDataByPage(pageNumber, pageSize, totalRecord, result)
+    } else {
+      result = await this.prisma.usePrisma().product.findMany({
+        include: {
+          Discount: true
+        },
+        orderBy: {
+          Discount: {
+            percentage: 'desc'
+          }
+        }
+      });
+      return getDataByPage(undefined, undefined, totalRecord, result)
+    }
+  }
+
+  async getListProductByCategory(category_id?: number, pageNumber?: number, pageSize?: number): Promise<any> {
+    let result: any
+    const totalRecord = await this.prisma.usePrisma().product.count({
+      where: {
+        category_id: category_id ? category_id : {},
+      },
+    })
+    if (pageNumber && pageSize) {
+      result = await this.prisma.usePrisma().product.findMany({
+        where: {
+          category_id: category_id ? category_id : {},
+        },
+        include: {
+          Category: true
+        }
+      })
+      return getDataByPage(pageNumber, pageSize, totalRecord, result)
+    }
+    else {
+      result = await this.prisma.usePrisma().product.findMany({
+        where: {
+          category_id: category_id ? category_id : {},
+        },
+        include: {
+          Category: true
+        }
+      })
+      return getDataByPage(undefined, undefined, totalRecord, result)
+    }
   }
 
   searchProductByName(name: string): Promise<any> {
@@ -208,4 +268,6 @@ export class ProductService implements ProductRepository {
     })
     return await this.cache.set(ProductCache.ListProduct, listProduct)
   }
+
+
 }
