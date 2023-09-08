@@ -13,6 +13,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { StripeService } from 'src/infrastructure/common/stripe/stripe.service';
 import { EventGateway } from 'src/websocket/event.gateway';
 import { OrderStatus } from 'src/domain/enums/order-status.enum';
+
 @Injectable()
 export class AuthService implements AuthRepository {
   constructor(
@@ -69,7 +70,13 @@ export class AuthService implements AuthRepository {
         const unresolvedOrder = await this.prisma.usePrisma().order.findFirst({
           where: {
             shipper_id: user.id,
-            status: OrderStatus.OutOfDelivery
+            OR: [
+              {
+                status: OrderStatus.OutOfDelivery
+              }, {
+                status: OrderStatus.BeingShipped
+              }
+            ]
           }
         })
         if (unresolvedOrder) {

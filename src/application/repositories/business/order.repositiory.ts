@@ -9,6 +9,7 @@ export interface OrderRepository {
    getListDoneOrder(shipperId: number): Promise<any>;
    getListWaitingDoneOrder(shipperId: number): Promise<any>;
    getOrderDetail(orderId: number): Promise<any>;
+   getListOrderByShipper(shipperId: number, pageNumber: number, pageSize: number): Promise<any>;
    changeOrderStatus(orderId: number, status: string): Promise<any>;
    takeAnOrder(orderId: number, shipperId: number): Promise<any>;
    createNewOrder(data: CreateOrderDTO): Promise<any>;

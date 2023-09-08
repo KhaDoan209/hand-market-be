@@ -16,12 +16,15 @@ import { Role } from 'src/domain/enums/roles.enum';
 import { OrderStatus } from 'src/domain/enums/order-status.enum';
 import { EventGateway } from 'src/websocket/event.gateway';
 import { SocketMessage } from 'src/domain/enums/socket-message.enum';
+import { CreateConversationDTO, CreateMessageDTO } from 'src/application/dto/message.dto';
+import { MessageService } from '../message/message.service';
 @Injectable()
 export class OrderService implements OrderRepository {
    constructor(private readonly prisma: PrismaService, private readonly stripe: StripeService, private readonly mailService: MailerService,
       private readonly notiService: NotificationService,
       private readonly eventGateway: EventGateway,
-      private readonly mapbox: MapboxService) {
+      private readonly mapbox: MapboxService,
+      private readonly messageService: MessageService) {
    }
    async getListOrder(orderStatus?: string, pageNumber?: number, pageSize?: number): Promise<any> {
       let orders: any
@@ -35,22 +38,24 @@ export class OrderService implements OrderRepository {
             where: {
                status: orderStatus ? orderStatus : {}
             }, include: {
-               User: true
+               Order_user: true
+            }, orderBy: {
+               order_date: 'desc'
             }
          })
+         console.log(orders);
          return getDataByPage(pageNumber, pageSize, totalRecord, orders)
       } else {
          orders = await this.prisma.usePrisma().order.findMany({
             where: {
                status: orderStatus ? orderStatus : {}
             }, include: {
-               User: true
+               Order_user: true
             }
          })
          return getDataByPage(undefined, undefined, totalRecord, orders)
       }
    }
-
 
    async getListOrderByUserForAdmin(userId: number, orderStatus?: string): Promise<any> {
       const result = await this.prisma.usePrisma().order.findMany({
@@ -72,11 +77,32 @@ export class OrderService implements OrderRepository {
          where: {
             user_id: Number(userId)
          }, include: {
-            User: true
+            Order_user: true
+         }, orderBy: {
+            order_date: 'desc'
          }
       })
       return getDataByPage(pageNumber, pageSize, totalRecord, listOrder)
    }
+
+   async getListOrderByShipper(shipperId: number, pageNumber: number = 1, pageSize: number = 8,): Promise<any> {
+      const totalRecord = Math.ceil(await this.prisma.usePrisma().order.count({
+         where: {
+            shipper_id: shipperId
+         }
+      }))
+      const listOrder = await this.prisma.usePrisma().order.findMany({
+         where: {
+            shipper_id: shipperId
+         }, include: {
+            Order_user: true
+         }, orderBy: {
+            order_date: 'desc'
+         }
+      })
+      return getDataByPage(pageNumber, pageSize, totalRecord, listOrder)
+   }
+
    async getListPendingDeliveryOrder() {
       const listPendingOrder = await this.prisma.usePrisma().order.findMany({
          where: {
@@ -87,7 +113,7 @@ export class OrderService implements OrderRepository {
             order_date: 'desc'
          },
          include: {
-            User: true
+            Order_user: true
          }
       })
       return listPendingOrder
@@ -140,7 +166,7 @@ export class OrderService implements OrderRepository {
             order_date: 'desc'
          },
          include: {
-            User: true
+            Order_user: true
          }
       })
    }
@@ -158,7 +184,7 @@ export class OrderService implements OrderRepository {
                }
             ]
          }, include: {
-            User: {
+            Order_user: {
                select: {
                   id: true,
                   first_name: true,
@@ -281,7 +307,7 @@ export class OrderService implements OrderRepository {
                         status: OrderStatus.Confirmed
                      },
                      include: {
-                        User: true,
+                        Order_user: true
                      }
                   })
                   this.eventGateway.server.to(id).emit(SocketMessage.NewOrder, pickedUpOrder);
@@ -316,6 +342,7 @@ export class OrderService implements OrderRepository {
 
    async takeAnOrder(shipperId: number, orderId: number): Promise<any> {
       try {
+         const today = new Date();
          const checkShipper = await this.prisma.usePrisma().order.findMany({
             where: {
                shipper_id: Number(shipperId),
@@ -360,7 +387,43 @@ export class OrderService implements OrderRepository {
                   product_id: null,
                   link: receivedOrder.id.toString(),
                }
+               const newConversation: CreateConversationDTO = {
+                  sender_id: receivedOrder.user_id,
+                  receiver_id: receivedOrder.shipper_id,
+                  order_id: receivedOrder.id,
+
+               }
+               const createdConversation = await this.prisma.usePrisma().conversation.create({
+                  data: {
+                     ...newConversation, created_at: today.toISOString(), lastest_message: today.toISOString()
+                  }
+               })
+               const newMessage: CreateMessageDTO = {
+                  conversation_id: createdConversation.id,
+                  content: "Tin nhắn tự động: Xin chào! Đơn hàng của bạn đã được chúng tôi xác nhận và đang tìm shipper phù hợp. Chúng tôi sẽ đảm bảo rằng đơn hàng sẽ được vận chuyển an toàn và đúng hẹn. Nếu bạn có bất kỳ câu hỏi hoặc cần thêm thông tin, hãy liên hệ với chúng tôi qua số điện thoại: 0907874726. Chúc bạn một ngày tốt lành!",
+                  room_id: receivedOrder.room_id,
+                  sender_id: receivedOrder.shipper_id,
+               }
+               await this.prisma.usePrisma().message.create({
+                  data: {
+                     ...newMessage, created_at: today.toISOString(),
+                     seen: false, receiver_id: receivedOrder.user_id
+                  }
+               })
+               await this.prisma.usePrisma().conversation.update({
+                  where: {
+                     id: createdConversation.id,
+                  },
+                  data: {
+                     lastest_message: today.toISOString(),
+                     latest_text: newMessage.content
+                  }
+               })
                await this.notiService.createNewNotification(newNotification)
+               this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.NewConversation, createdConversation)
+               this.eventGateway.server.to(userSocketId).emit(SocketMessage.NewConversation, createdConversation)
+               this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.NewMessage, createdConversation)
+               this.eventGateway.server.to(userSocketId).emit(SocketMessage.NewMessage, createdConversation)
                this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.UpdateFreepick)
                this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.UpdateOrderInProgress)
                this.eventGateway.server.to(userSocketId).emit(SocketMessage.OrderStatusUpdate)
@@ -377,9 +440,15 @@ export class OrderService implements OrderRepository {
    }
 
    async changeOrderStatus(orderId: number, status: string): Promise<any> {
+      const today = new Date()
       const order = await this.prisma.usePrisma().order.findFirst({
          where: {
             id: orderId
+         }
+      })
+      const conversation = await this.prisma.usePrisma().conversation.findFirst({
+         where: {
+            order_id: order.id
          }
       })
       await this.prisma.usePrisma().order.update({
@@ -405,6 +474,14 @@ export class OrderService implements OrderRepository {
          return this.eventGateway.server.to(userSocketId).emit(SocketMessage.OrderStatusUpdate)
       }
       else if (status === OrderStatus.Delivered) {
+         await this.prisma.usePrisma().order.update({
+            where: {
+               id: order.id
+            },
+            data: {
+               actual_delivery_date: today.toISOString()
+            }
+         })
          let newNotification: CreateNotificationDTO = {
             order_id: orderId,
             link: orderId.toString(),
@@ -412,6 +489,13 @@ export class OrderService implements OrderRepository {
             product_id: null,
             user_id: null
          }
+         let message: CreateMessageDTO = {
+            sender_id: order.shipper_id,
+            content: "Đơn hàng của bạn đã được giao đến, shipper sẽ rời khỏi cuộc trò chuyện. Nếu có thắc mắc, vui lòng liên hệ số điện thoại 0907874726, hoặc địa chỉ email handmarket@gmail.com",
+            room_id: order.room_id,
+            conversation_id: conversation.id
+         }
+         await this.messageService.sendMessage(message)
          await this.notiService.createNewNotification(newNotification)
          this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.UpdateOrderInProgress)
          this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.UpdateWaitingDone)
@@ -429,7 +513,8 @@ export class OrderService implements OrderRepository {
          await this.notiService.createNewNotification(newNotification)
          this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.UpdateWaitingDone)
          this.eventGateway.server.to(shipperSocketId).emit(SocketMessage.NewNotification)
-         return this.eventGateway.server.to(userSocketId).emit(SocketMessage.OrderStatusUpdate)
+         this.eventGateway.server.to(userSocketId).emit(SocketMessage.OrderStatusUpdate)
+         return this.eventGateway.leaveRoom(order.user_id, order.room_id)
       }
    }
 
@@ -439,6 +524,18 @@ export class OrderService implements OrderRepository {
             id: orderId
          }
       })
+      const conversation = await this.prisma.usePrisma().conversation.findFirst({
+         where: {
+            order_id: order.id
+         }
+      })
+      const message: CreateMessageDTO = {
+         sender_id: order.shipper_id,
+         content: `Đơn hàng của bạn đã bị hủy với lý do: ${cancel_reason}. Nếu có thắc mắc, vui lòng liên hệ số điện thoại 0907874726, hoặc địa chỉ email handmarket@gmail.com`,
+         room_id: order.room_id,
+         conversation_id: conversation.id
+      }
+
       await this.prisma.usePrisma().order.update({
          where: {
             id: orderId,
@@ -456,54 +553,10 @@ export class OrderService implements OrderRepository {
          link: order.id.toString(),
       }
       await this.notiService.createNewNotification(newNotification)
+      await this.messageService.sendMessage(message)
       const shipperSocket = this.eventGateway.getSocketIdByUserId(order.shipper_id.toString())
+      this.eventGateway.joinRoom(order.shipper_id, Role.Shipper)
       this.eventGateway.server.to(shipperSocket).emit(SocketMessage.UpdateOrderInProgress)
-   }
-
-   async devSendOrder() {
-      const order = {
-         id: 77,
-         order_date: "2023-08-13T12:25:41.000Z",
-         status: "Confirmed",
-         payment_status: "succeeded",
-         order_total: "30757",
-         credit_id: null,
-         user_id: 13,
-         order_code: "HM540538",
-         street: "26/4 Hoàng Sĩ Khải",
-         ward: "An Hải Bắc",
-         province: "Đà Nẵng",
-         district: "Sơn Trà",
-         expected_delivery_date: "2023-08-18T12:25:40.533Z",
-         actual_delivery_date: null,
-         room_id: null,
-         shipper_id: null,
-         User: {
-            id: 13,
-            first_name: "Nam",
-            last_name: "Nguyen",
-            email: "nam@gmail.com",
-            password: "$2b$10$nkBYo3.i9zneI3d1QcJh9ukcX3Vt3Y67wWzevYki5cd3Ow8C8J/6a",
-            role: "User",
-            is_locked: false,
-            is_banned: false,
-            refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImlkIjoxMywiZW1haWwiOiJuYW1AZ21haWwuY29tIiwicGFzc3dvcmQiOiIkMmIkMTAkbmtCWW8zLmk5em5lSTNkMVFjSmg5dWtjWDNWdDNZNjd3V3pldllraTVjZDNPdzhDOEovNmEifSwiaWF0IjoxNjkxODA4Mzk3LCJleHAiOjE2OTQ0MDAzOTd9.qI4eiV0KLQw5tFUG_qWgF7EJgtGiHbXofOw_uWfEMns",
-            avatar: "http://res.cloudinary.com/dudhcr2rt/image/upload/v1691397958/hand-market/kb6igi0ndporbzfw89f8.jpg",
-            is_deleted: false,
-            phone: "0907874726",
-            stripe_customer_id: "cus_ONGFCBHtdCx7iW",
-            socket_id: "iPw10_4MuCPl0u3sAAAJ"
-         }
-      }
-      const roomSockets = this.eventGateway.server.sockets.adapter.rooms.get(Role.Shipper);
-      if (roomSockets) {
-         const socketIds = Array.from(roomSockets);
-         for (const id of socketIds) {
-            this.eventGateway.server.to(id).emit(SocketMessage.NewOrder, order)
-            await new Promise((resolve) => setTimeout(resolve, 6000));
-         }
-      }
-      return roomSockets
    }
 
 }
