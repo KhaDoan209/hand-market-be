@@ -25,7 +25,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
       const refresh_token: any = socket.handshake.headers.refresh_token
       if (refresh_token) {
          try {
-            const { id, email } = await authUtil.getDecodedToken(refresh_token, config.get('REFRESH_SECRECT_KEY')).data
+            const { id } = await authUtil.getDecodedToken(refresh_token, config.get('REFRESH_SECRECT_KEY')).data
             socket.data
             this.userSocketMap.set(id.toString(), socket.id);
             await this.prisma.usePrisma().user.update({
@@ -83,6 +83,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
          }
       }
    }
+
    async leaveRoom(id: number, roomId: string) {
       const socketId = this.getSocketIdByUserId(id.toString());
       if (socketId) {
@@ -97,6 +98,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
          console.log(`Socket ID not found for user with ID ${id}`);
       }
    }
+
    @SubscribeMessage(SocketMessage.JoinRoom)
    async handleJoinRoom(@MessageBody() data: any, @ConnectedSocket() socket: Socket) {
       const { userId, role } = data;
@@ -112,7 +114,6 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
          } else {
             socket.join(Role.Shipper)
          }
-
       } else if (role === Role.User) {
          const orderList = await this.prisma.usePrisma().order.findMany({
             where: {
@@ -135,5 +136,6 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
    }
 
 }
+
 
 

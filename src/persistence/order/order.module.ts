@@ -6,8 +6,9 @@ import { StripeModule } from 'src/infrastructure/common/stripe/stripe.module';
 import { NotificationModule } from '../notification/notification.module';
 import { EventGatewayModule } from 'src/websocket/socket.module';
 import { MapboxModule } from 'src/infrastructure/common/map-box/mapbox.module';
+import { MessageModule } from '../message/message.module';
 @Module({
-  imports: [PrismaModule, StripeModule, NotificationModule, EventGatewayModule, MapboxModule],
+  imports: [PrismaModule, StripeModule, NotificationModule, EventGatewayModule, MapboxModule, MessageModule],
   controllers: [OrderController],
   providers: [OrderService]
 })

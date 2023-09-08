@@ -39,6 +39,15 @@ export class OrderController {
 
 
   @Roles(Role.Admin, Role.Shipper)
+  @Get('get-order-by-shipper/:shipper_id')
+  async getListOrderByShipper(@Param('shipper_id') userId: number, @Query() query: any) {
+    const { pageNumber, pageSize } = query
+    const data = await this.orderService.getListOrderByShipper(+userId, +pageNumber, +pageSize)
+    return customResponse(data, HttpStatus.OK, "Get list order by shipper successfully")
+  }
+
+
+  @Roles(Role.Admin, Role.Shipper)
   @Get('get-list-pending-delivery-order')
   async getListPendingDeliveryOrder(@Query() query: any) {
     const data = await this.orderService.getListPendingDeliveryOrder()
@@ -69,6 +78,7 @@ export class OrderController {
     const data = await this.orderService.getListDoneOrder(+shipperId)
     return customResponse(data, HttpStatus.OK, "Get list done order successfully")
   }
+
 
   @Roles(Role.User)
   @Post('create-new-order')
@@ -110,14 +120,11 @@ export class OrderController {
     return customResponse(null, HttpStatus.OK, "Sucessful")
   }
 
-  @Post('cancel-order/')
+  @Post('cancel-order')
   async cancelAnOrder(@Body() body: any) {
     const { cancel_reason, order_id } = body
     await this.orderService.cancelAnOrder(+order_id, cancel_reason)
   }
 
-  @Post('dev-send-order')
-  async devSendOrder() {
-    return await this.orderService.devSendOrder()
-  }
+
 }
