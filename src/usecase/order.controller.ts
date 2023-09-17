@@ -8,7 +8,6 @@ import { CreateOrderDTO } from 'src/application/dto/order.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from 'src/shared/decorators/role.decorator';
 import { Role } from 'src/domain/enums/roles.enum';
-import { query } from 'express';
 @UseGuards(AuthGuard('Jwt'))
 @Controller('order')
 export class OrderController {

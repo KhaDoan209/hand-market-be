@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { AuthLoginDTO, AuthRegisterDTO, FacebookLoginDTO, GoogleLoginDTO } from 'src/application/dto/auth.dto';
+import { AuthLoginDTO, AuthRegisterDTO, ContactFormDTO, FacebookLoginDTO, GoogleLoginDTO } from 'src/application/dto/auth.dto';
 import { AuthRepository } from 'src/application/repositories/business/auth.repository';
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/domain/enums/roles.enum';
@@ -13,7 +13,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { StripeService } from 'src/infrastructure/common/stripe/stripe.service';
 import { EventGateway } from 'src/websocket/event.gateway';
 import { OrderStatus } from 'src/domain/enums/order-status.enum';
-
+import * as nodemailer from 'nodemailer';
 @Injectable()
 export class AuthService implements AuthRepository {
   constructor(
@@ -23,7 +23,7 @@ export class AuthService implements AuthRepository {
     private readonly mailService: MailerService = null,
     @Inject(CACHE_MANAGER) private cache: Cache = null,
     private readonly stripe: StripeService = null,
-    private readonly eventGateway: EventGateway = null
+    private readonly eventGateway: EventGateway = null,
   ) {
   }
 
@@ -366,5 +366,28 @@ export class AuthService implements AuthRepository {
       }
     }
 
+  }
+
+  async sendContactForm(body: ContactFormDTO): Promise<any> {
+    const { email, first_name, last_name, content } = body
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: this.configService.getMailUser(),
+        pass: this.configService.getMailPassword(),
+      },
+    });
+    const mailOptions = {
+      from: email,
+      to: 'handmarket@gmail.com',
+      subject: 'New Contact Form Submission',
+      text: `Name: ${first_name} ${last_name}\nEmail: ${email}\nMessage: ${content}`,
+    };
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      return `Email sent: ${info.response}`;
+    } catch (error) {
+      throw new Error(`Error sending email: ${error}`);
+    }
   }
 }  

@@ -11,7 +11,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from 'src/infrastructure/common/cloudinary/cloudinary.service';
 import { Role } from 'src/domain/enums/roles.enum';
 import { Roles } from 'src/shared/decorators/role.decorator';
-
+import { SkipThrottle } from '@nestjs/throttler/dist/throttler.decorator';
+@SkipThrottle()
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService,
@@ -46,9 +47,30 @@ export class ProductController {
 
   @Get('/get-list-product-by-category')
   async getListProductByCategory(@Query() query: any) {
-    const { category_id, pageNumber, pageSize } = query
-    const data = await this.productService.getListProductByCategory(category_id, +pageNumber, +pageSize)
+    const { categoryId, pageNumber, pageSize } = query
+    const data = await this.productService.getListProductByCategory(+categoryId, +pageNumber, +pageSize)
     return customResponse(data, HttpStatus.OK, "Get list product by category successfully")
+  }
+
+  @Get('/get-list-product-by-type')
+  async getListProductByType(@Query() query: any) {
+    const { categoryId, type, pageNumber, pageSize } = query
+    const data = await this.productService.getListProductByType(+categoryId, type, +pageNumber, +pageSize)
+    return customResponse(data, HttpStatus.OK, "Get list product by type sucesfully")
+  }
+
+  @Get('/get-list-product-by-view')
+  async getListProductByView(@Query() query: any) {
+    const { pageNumber, pageSize } = query
+    const data = await this.productService.getListProductByView(+ +pageNumber, +pageSize)
+    return customResponse(data, HttpStatus.OK, "Get list product by view sucesfully")
+  }
+
+  @Get('/search-product-by-name')
+  async searchProductByName(@Query() query: any) {
+    const { name, pageNumber, pageSize } = query
+    const data = await this.productService.searchProductByName(name, +pageNumber, +pageSize)
+    return customResponse(data, HttpStatus.OK, "Search product by name sucesfully")
   }
 
   @Post('/create-new-product')
@@ -91,6 +113,32 @@ export class ProductController {
     return customResponse(null, HttpStatus.OK, "Delete product successfully")
   }
 
+  @Post('/increase-product-view/:id')
+  async increaseProductView(@Param('id') productId: number) {
+    await this.productService.increaseProductView(+productId)
+    return customResponse(null, HttpStatus.OK, "Increase view successfully")
+  }
+
+  @Get('/arrange-product-by-name')
+  async arrangeProductByName(@Query() query: any) {
+    const { categoryId, type, orderBy, pageNumber, pageSize } = query
+    const data = await this.productService.arrangeProductByName(+categoryId, type, orderBy, +pageNumber, +pageSize)
+    return customResponse(data, HttpStatus.OK, "Arrange product by name")
+  }
+
+  @Get('/arrange-product-by-price')
+  async arrangeProductByPrice(@Query() query: any) {
+    const { categoryId, type, orderBy, pageNumber, pageSize } = query
+    const data = await this.productService.arrangeProductByPrice(+categoryId, type, orderBy, +pageNumber, +pageSize)
+    return customResponse(data, HttpStatus.OK, "Arrange product by price")
+  }
+
+  @Get('/arrange-product-by-view')
+  async arrangeProductByView(@Query() query: any) {
+    const { categoryId, type, orderBy, pageNumber, pageSize } = query
+    const data = await this.productService.arrangeProductByView(+categoryId, type, orderBy, +pageNumber, +pageSize)
+    return customResponse(data, HttpStatus.OK, "Arrange product by price")
+  }
 }
 
 

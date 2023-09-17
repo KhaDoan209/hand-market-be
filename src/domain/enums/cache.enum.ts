@@ -6,5 +6,5 @@ export enum UserCache {
 
 export enum ProductCache {
    ListProduct = 'list_product',
-   ProductDetail = '/product/get-product-detail'
+   ProductDetail = '/product/get-product-detail/'
 }
