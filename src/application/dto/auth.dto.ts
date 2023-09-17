@@ -84,3 +84,25 @@ export class GoogleLoginDTO {
    @ApiProperty()
    readonly avatar: string;
 }
+
+export class ContactFormDTO {
+   @IsNotEmpty()
+   @IsString()
+   @ApiProperty()
+   first_name: string;
+
+   @IsNotEmpty()
+   @IsString()
+   @ApiProperty()
+   last_name: string;
+
+   @IsNotEmpty()
+   @IsString()
+   @ApiProperty()
+   email: string
+   
+   @IsNotEmpty()
+   @IsString()
+   @ApiProperty()
+   content: string
+}

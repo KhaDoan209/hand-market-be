@@ -19,8 +19,12 @@ import { EnvironmentConfigService } from './infrastructure/config/environment/en
 import { MapboxModule } from './infrastructure/common/map-box/mapbox.module';
 import path, { join } from 'path';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { ThrottlerModule } from '@nestjs/throttler';
 @Module({
-  imports: [MapboxModule, PersistenceModule, EnvironmentConfigModule.register(), CacheModule.register({
+  imports: [ThrottlerModule.forRoot([{
+    ttl: 60000,
+    limit: 20
+  }]), MapboxModule, PersistenceModule, EnvironmentConfigModule.register(), CacheModule.register({
     store: redisStore,
     ttl: 300,
     isGlobal: true,
@@ -65,8 +69,10 @@ export class AppModule implements NestModule {
       { path: 'product/get-list-product', method: RequestMethod.GET },
       { path: 'product/get-product-detail/:id', method: RequestMethod.GET },
       { path: 'product/get-list-product-by-purchase', method: RequestMethod.GET },
-      { path: 'product/get-list-product-by-discount', method: RequestMethod.GET },
+      { path: 'product/get-list-product-by-view', method: RequestMethod.GET },
+      { path: 'product/get-list-product-by-discount', method: RequestMethod.GET }, { path: 'product/get-list-product-by-category', method: RequestMethod.GET },
       { path: 'category/get-list-category', method: RequestMethod.GET },
+      { path: 'category/list-product-type/:id', method: RequestMethod.GET },
     ).forRoutes('*')
     consumer.apply(LoginMiddlweare).forRoutes('auth/login')
     consumer.apply(RegisterMiddleware).forRoutes('auth/register')

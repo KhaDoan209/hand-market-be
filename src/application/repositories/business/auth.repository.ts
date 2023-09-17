@@ -1,4 +1,4 @@
-import { AuthLoginDTO, AuthRegisterDTO, FacebookLoginDTO, GoogleLoginDTO } from "src/application/dto/auth.dto";
+import { AuthLoginDTO, AuthRegisterDTO, ContactFormDTO, FacebookLoginDTO, GoogleLoginDTO } from "src/application/dto/auth.dto";
 
 export interface AuthRepository {
    login(userLogin: AuthLoginDTO): Promise<any>;
@@ -8,4 +8,5 @@ export interface AuthRepository {
    loginWithFacebook(data: FacebookLoginDTO): Promise<any>;
    loginWithGoogle(data: GoogleLoginDTO): Promise<any>;
    checkExistedEmail(email: string): Promise<any>;
+   sendContactForm(body: ContactFormDTO): Promise<any>;
 }

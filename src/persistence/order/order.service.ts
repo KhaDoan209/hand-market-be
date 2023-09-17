@@ -124,6 +124,7 @@ export class OrderService implements OrderRepository {
          where: {
             id: orderId,
          }, include: {
+            Order_user: true,
             OrderDetail: {
                include: {
                   Product: true,

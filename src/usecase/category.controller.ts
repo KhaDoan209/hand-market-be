@@ -4,6 +4,7 @@ import { customResponse } from 'src/shared/utils/custom-functions/custom-respons
 @Controller('category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) { }
+  
   @Get('/get-list-category')
   async getListCategory() {
     const data = await this.categoryService.getListCategory()

@@ -12,10 +12,8 @@ import { Product } from '@prisma/client';
 import { CloudinaryService } from 'src/infrastructure/common/cloudinary/cloudinary.service';
 import { getImagePublicId } from 'src/shared/utils/custom-functions/custom-response';
 import { NotificationService } from '../notification/notification.service';
-import { EventGateway } from 'src/websocket/event.gateway';
 import { NotificationType } from 'src/domain/enums/notification.enum';
-import { CreateNotificationDTO } from 'src/application/dto/notification.dto';
-import { throttleTime } from 'rxjs';
+import { CreateNotificationDTO } from 'src/application/dto/notification.dto';                                             
 @Injectable()
 export class ProductService implements ProductRepository {
   constructor(
@@ -39,6 +37,9 @@ export class ProductService implements ProductRepository {
         where: {
           is_deleted: false
         },
+        orderBy: {
+          created_at: 'asc'
+        }
       })
       await this.cache.set(ProductCache.ListProduct, listProduct)
       return getDataByPage(pageNumber, pageSize, totalRecord, listProduct)
@@ -86,6 +87,39 @@ export class ProductService implements ProductRepository {
       result = await this.prisma.usePrisma().product.findMany({
         orderBy: {
           purchase: 'desc'
+        },
+        include: {
+          Discount: true,
+          Category: true,
+        },
+      });
+      return getDataByPage(undefined, undefined, totalRecord, result)
+    }
+  }
+
+  async getListProductByView(pageNumber?: number, pageSize?: number): Promise<any> {
+    let result: any
+    const totalRecord = Math.ceil(await this.prisma.usePrisma().product.count({
+      where: {
+        is_deleted: false
+      }
+    }))
+    if (pageNumber && pageSize) {
+      result = await this.prisma.usePrisma().product.findMany({
+        orderBy: {
+          views: 'desc'
+        },
+        include: {
+          Discount: true,
+          Category: true,
+        },
+        take: pageSize,
+      });
+      return getDataByPage(pageNumber, pageSize, totalRecord, result)
+    } else {
+      result = await this.prisma.usePrisma().product.findMany({
+        orderBy: {
+          views: 'desc'
         },
         include: {
           Discount: true,
@@ -165,8 +199,43 @@ export class ProductService implements ProductRepository {
     }
   }
 
-  searchProductByName(name: string): Promise<any> {
-    return
+  async getListProductByType(categoryId: number, types: string[], pageNumber: number, pageSize: number): Promise<any> {
+    let result: any
+    const totalRecord = await this.prisma.usePrisma().product.count({
+      where: {
+        category_id: categoryId,
+        type: {
+          in: types,
+        },
+      },
+    });
+    if (pageNumber && pageSize) {
+      result = await this.prisma.usePrisma().product.findMany({
+        where: {
+          category_id: categoryId,
+          type: {
+            in: types,
+          },
+        },
+      });
+      return getDataByPage(pageNumber, pageSize, totalRecord, result)
+    }
+    else {
+      result = await this.prisma.usePrisma().product.findMany({
+        where: {
+          type: {
+            in: types,
+          },
+        },
+      });
+      return getDataByPage(undefined, undefined, totalRecord, result)
+    }
+  }
+
+  async searchProductByName(name: string, pageNumber: number, pageSize: number): Promise<any> {
+    const listProduct: any = await this.prisma.usePrisma().$queryRaw`SELECT * FROM "Product"
+    WHERE "name" ILIKE '%' || ${name} || '%';`
+    return getDataByPage(pageNumber, pageSize, listProduct.length, listProduct)
   }
 
   async createNewProduct(body: CreateProductDTO, imageLink: string = ''): Promise<any> {
@@ -269,5 +338,73 @@ export class ProductService implements ProductRepository {
     return await this.cache.set(ProductCache.ListProduct, listProduct)
   }
 
+  async increaseProductView(productId: number): Promise<any> {
+    const product = await this.prisma.usePrisma().product.findFirst({
+      where: {
+        id: productId
+      }
+    })
+    await this.prisma.usePrisma().product.update({
+      where: {
+        id: productId
+      },
+      data: {
+        views: product.views + 1
+      }
+    })
+    const productDetail = await this.prisma.usePrisma().product.findFirst({
+      where: {
+        id: productId
+      },
+      include: {
+        Discount: true,
+        Category: true,
+      }
+    })
+    return await this.cache.set(ProductCache.ProductDetail + productId, productDetail, { ttl: 30 } as any)
+  }
 
+  async arrangeProductByName(category?: number, type?: string[], orderBy: any = 'asc', pageNumber: number = 1, pageSize: number = 8): Promise<any> {
+    const listProduct = await this.prisma.usePrisma().product.findMany({
+      where: {
+        category_id: category ? category : {},
+        type: type ? {
+          in: type
+        } : {}
+      }, orderBy: {
+        name: orderBy
+      }
+    })
+    return getDataByPage(pageNumber, pageSize, listProduct.length, listProduct)
+  }
+
+  async arrangeProductByPrice(category: number, type: string[], orderBy: any, pageNumber: number, pageSize: number): Promise<any> {
+    const listProduct = await this.prisma.usePrisma().product.findMany({
+      where: {
+        category_id: category ? category : {},
+        type: type ? {
+          in: type
+        } : {}
+      },
+      orderBy: {
+        price: orderBy
+      }
+    })
+    return getDataByPage(pageNumber, pageSize, listProduct.length, listProduct)
+  }
+
+  async arrangeProductByView(category: number, type: string[], orderBy: any, pageNumber: number, pageSize: number): Promise<any> {
+    const listProduct = await this.prisma.usePrisma().product.findMany({
+      where: {
+        category_id: category ? category : {},
+        type: type ? {
+          in: type
+        } : {}
+      },
+      orderBy: {
+        views: orderBy
+      }
+    })
+    return getDataByPage(pageNumber, pageSize, listProduct.length, listProduct)
+  }
 }

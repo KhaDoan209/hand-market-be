@@ -1,6 +1,6 @@
 import { Controller, Get, Res, Req, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { AuthService } from '../persistence/auth/auth.service';
-import { AuthLoginDTO, AuthRegisterDTO, FacebookLoginDTO, GoogleLoginDTO } from 'src/application/dto/auth.dto';
+import { AuthLoginDTO, AuthRegisterDTO, ContactFormDTO, FacebookLoginDTO, GoogleLoginDTO } from 'src/application/dto/auth.dto';
 import { ValidationPipe } from '@nestjs/common/pipes';
 import { customResponse } from 'src/shared/utils/custom-functions/custom-response';
 import { HttpStatus } from '@nestjs/common/enums';
@@ -66,5 +66,11 @@ export class AuthController {
     res.cookie('access_token', access_token, { httpOnly: false, expires: new Date(Date.now() + 30 * 60 * 1000), });
     res.cookie('refresh_token', refresh_token, { httpOnly: false, expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), });
     return customResponse(userToResponse, HttpStatus.OK, "Login successfully")
+  }
+
+  @Post('/send-contact-form')
+  async sendContactForm(@Body() body: ContactFormDTO) {
+    await this.authService.sendContactForm(body)
+    return customResponse(null, HttpStatus.CREATED, "Send contact form sucessfully")
   }
 }
