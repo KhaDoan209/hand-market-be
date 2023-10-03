@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Address {
+  id       Int     @id @default(autoincrement())
+  street   String? @db.VarChar(100)
+  district String? @db.VarChar(100)
+  ward     String? @db.VarChar(100)
+  province String? @db.VarChar(100)
+  user_id  Int     @unique(map: "user_id_UNIQUE")
+  User     User    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "address_ibfk_1")
+
+  @@index([user_id], map: "user_id_idx")
+}
+
+model Cart {
+  id            Int       @id(map: "cart_pkey") @default(autoincrement())
+  product_id    Int?
+  user_id       Int
+  item_quantity Int?
+  created_at    DateTime? @db.Timestamp(0)
+  Product       Product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "cart_ibfk_1")
+  User          User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "cart_ibfk_2")
+}
+
+model Category {
+  id          Int       @id @unique(map: "myCategoryIdUniqueConstraint") @default(autoincrement())
+  name        String?   @db.VarChar(45)
+  image       String?
+  created_at  DateTime? @db.Timestamp(0)
+  created_by  String?   @db.VarChar(100)
+  description String?
+  Product     Product[]
+}
+
+model Discount {
+  id         Int       @id @unique(map: "myDiscountIdUniqueConstraint") @default(autoincrement())
+  percentage Decimal?  @db.Decimal(10, 2)
+  Product    Product[]
+}
+
+model Message {
+  id                             Int           @id @unique(map: "myMessageIdUniqueConstraint") @default(autoincrement())
+  sender_id                      Int?
+  content                        String?
+  created_at                     DateTime?     @db.Timestamp(6)
+  seen                           Boolean?
+  room_id                        String?
+  conversation_id                Int?
+  receiver_id                    Int?
+  Message_sender                 User?         @relation("Message_sender", fields: [sender_id], references: [id], onDelete: Cascade, map: "message_fk_1")
+  Conversation                   Conversation? @relation(fields: [conversation_id], references: [id], onDelete: Cascade, map: "message_fk_2")
+  User_Message_receiver_idToUser User?         @relation("Message_receiver_idToUser", fields: [receiver_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "message_fk_3")
+}
+
+model Notification {
+  id          Int       @id @default(autoincrement())
+  user_id     Int?
+  order_id    Int?
+  content     String?
+  is_read     Boolean?  @default(false)
+  product_id  Int?
+  created_at  DateTime? @db.Timestamp(6)
+  link        String?
+  noti_type   String?
+  receiver_id Int?
+  User        User?     @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "noti_ibfk_1")
+  Order       Order?    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "noti_ibfk_2")
+  Product     Product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "noti_ibfk_4")
+
+  @@index([user_id], map: "noti_ibfk_1_idx")
+  @@index([order_id], map: "noti_ibfk_1_idx1")
+}
+
+model Order {
+  id                     Int            @id @default(autoincrement())
+  order_date             DateTime?      @db.Timestamp(0)
+  status                 String?        @db.VarChar(45)
+  payment_status         String?        @db.VarChar(45)
+  order_total            Decimal?       @db.Decimal(10, 2)
+  credit_id              Int?
+  user_id                Int?
+  order_code             String?        @unique(map: "Order_unique_1")
+  street                 String?
+  ward                   String?
+  province               String?
+  district               String?
+  expected_delivery_date DateTime?      @db.Timestamp(6)
+  actual_delivery_date   DateTime?      @db.Timestamp(6)
+  room_id                String?
+  shipper_id             Int?
+  long                   Decimal?       @db.Decimal(10, 6)
+  lat                    Decimal?       @db.Decimal(10, 6)
+  cancel_reason          String?
+  Conversation           Conversation[]
+  Notification           Notification[]
+  Order_user             User?          @relation("Order_user", fields: [user_id], references: [id], map: "order_ibfk_3")
+  Order_shipper          User?          @relation("Order_shipper", fields: [shipper_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_4")
+  OrderDetail            OrderDetail[]
+
+  @@index([credit_id], map: "credit_idx")
+  @@index([user_id], map: "user_idx")
+}
+
+model OrderDetail {
+  order_id   Int
+  product_id Int
+  is_deleted Int?     @db.SmallInt
+  quantity   Int?
+  price      Decimal? @db.Decimal(10, 0)
+  Order      Order    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_detail_ibfk_1")
+  Product    Product  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_detail_ibfk_2")
+
+  @@id([order_id, product_id])
+  @@index([product_id], map: "product_idx")
+}
+
+model Product {
+  id           Int            @id @unique(map: "myProducttIdUniqueConstraint") @default(autoincrement())
+  name         String?        @db.VarChar(200)
+  image        String?
+  price        Decimal?       @default(0.00) @db.Decimal(10, 2)
+  description  String?
+  in_stock     Boolean?       @default(true)
+  type         String?        @db.VarChar(45)
+  stars        Int?           @default(0)
+  brand        String?        @db.VarChar(100)
+  purchase     Int?           @default(0)
+  views        Int?           @default(0)
+  created_at   DateTime?      @db.Timestamp(0)
+  is_deleted   Boolean?       @default(false)
+  quantity     Int?           @default(0)
+  category_id  Int
+  discount_id  Int?
+  Cart         Cart[]
+  Notification Notification[]
+  OrderDetail  OrderDetail[]
+  Category     Category       @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "product_ibfk_1")
+  Discount     Discount?      @relation(fields: [discount_id], references: [id], onDelete: Cascade, map: "product_ibfk_2")
+  Rate         Rate[]
+
+  @@index([category_id], map: "category_id_idx")
+  @@index([discount_id], map: "discount_id_idx")
+}
+
+model Rate {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  product_id Int
+  star       Int
+  created_at DateTime? @db.Timestamp(0)
+  User       User      @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "rate_ibfk_1")
+  Product    Product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "rate_ibfk_2")
+
+  @@index([user_id], map: "rate_ibfk_1_idx")
+  @@index([product_id], map: "rate_ibfk_2_idx")
+}
+
+model User {
+  id                                Int            @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  first_name                        String?        @db.VarChar(50)
+  last_name                         String?        @db.VarChar(50)
+  email                             String?        @unique(map: "email_UNIQUE") @db.VarChar(100)
+  password                          String?
+  role                              String?        @db.VarChar(20)
+  is_locked                         Boolean?       @default(false)
+  is_banned                         Boolean?       @default(false)
+  refresh_token                     String?
+  avatar                            String?
+  is_deleted                        Boolean?       @default(false)
+  phone                             String?        @db.VarChar(20)
+  stripe_customer_id                String?        @unique(map: "strip_key")
+  socket_id                         String?        @unique(map: "socket_id")
+  app_id                            String?        @unique(map: "app_id")
+  Address                           Address?
+  Cart                              Cart[]
+  Conversation_sender               Conversation[] @relation("Conversation_sender")
+  Conversation_receiver             Conversation[] @relation("Conversation_receiver")
+  Message_sender                    Message[]      @relation("Message_sender")
+  Message_Message_receiver_idToUser Message[]      @relation("Message_receiver_idToUser")
+  Notification                      Notification[]
+  Order_user                        Order[]        @relation("Order_user")
+  Order_shipper                     Order[]        @relation("Order_shipper")
+  Rate                              Rate[]
+}
+
+model Conversation {
+  id                    Int       @id @unique(map: "myConversationIdUniqueConstraint") @default(autoincrement())
+  sender_id             Int?
+  receiver_id           Int?
+  order_id              Int?
+  created_at            DateTime? @db.Timestamp(6)
+  lastest_message       DateTime? @db.Timestamp(6)
+  latest_text           String?
+  sender_unseen         Int?      @default(0)
+  receiver_unseen       Int?      @default(0)
+  Conversation_sender   User?     @relation("Conversation_sender", fields: [sender_id], references: [id], onDelete: Cascade, map: "conversation_fk_1")
+  Conversation_receiver User?     @relation("Conversation_receiver", fields: [receiver_id], references: [id], onDelete: Cascade, map: "conversation_fk_2")
+  Order                 Order?    @relation(fields: [order_id], references: [id], onDelete: Cascade, map: "conversation_fk_3")
+  Message               Message[]
+}
